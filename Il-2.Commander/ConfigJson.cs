@@ -4,6 +4,8 @@ namespace Il_2.Commander
 {
     public struct ConfigJson
     {
+        [JsonProperty("ConnectionString")]
+        public string ConnectionString { get; private set; }
         [JsonProperty("NumTarget")]
         public int NumTarget { get; private set; }
     }

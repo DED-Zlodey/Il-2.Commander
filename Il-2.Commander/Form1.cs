@@ -18,6 +18,7 @@ namespace Il_2.Commander
         public CommEx()
         {
             InitializeComponent();
+            SetApp.SetUp();
             btn_Stop.Enabled = false;
             busy = true;          
         }
