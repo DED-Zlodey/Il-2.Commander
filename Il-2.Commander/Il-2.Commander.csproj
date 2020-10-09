@@ -6,6 +6,8 @@
     <RootNamespace>Il_2.Commander</RootNamespace>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>46182.ico</ApplicationIcon>
+    <Copyright>-DED-Zlodey</Copyright>
+    <PackageProjectUrl>https://il2-expert.ru/</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
