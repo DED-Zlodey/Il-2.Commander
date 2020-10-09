@@ -1,6 +1,6 @@
 ﻿namespace Il_2.Commander
 {
-    partial class CommEx
+    partial class Form1
     {
         /// <summary>
         ///  Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CommEx));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.TabBG = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.btn_Stop = new System.Windows.Forms.Button();
@@ -36,6 +36,7 @@
             this.btn_StartGen = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.lbLog = new System.Windows.Forms.ListBox();
+            this.btn_StartPredGen = new System.Windows.Forms.Button();
             this.TabBG.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
@@ -56,6 +57,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.btn_StartPredGen);
             this.tabPage1.Controls.Add(this.btn_Stop);
             this.tabPage1.Controls.Add(this.btn_Start);
             this.tabPage1.Controls.Add(this.btn_StartGen);
@@ -123,14 +125,25 @@
             this.lbLog.Size = new System.Drawing.Size(762, 604);
             this.lbLog.TabIndex = 0;
             // 
-            // CommEx
+            // btn_StartPredGen
+            // 
+            this.btn_StartPredGen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btn_StartPredGen.Location = new System.Drawing.Point(291, 566);
+            this.btn_StartPredGen.Name = "btn_StartPredGen";
+            this.btn_StartPredGen.Size = new System.Drawing.Size(114, 31);
+            this.btn_StartPredGen.TabIndex = 0;
+            this.btn_StartPredGen.Text = "Start PredGen";
+            this.btn_StartPredGen.UseVisualStyleBackColor = true;
+            this.btn_StartPredGen.Click += new System.EventHandler(this.btn_StartPredGen_Click);
+            // 
+            // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 663);
             this.Controls.Add(this.TabBG);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "CommEx";
+            this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Commander Expert";
             this.TabBG.ResumeLayout(false);
@@ -149,6 +162,7 @@
         private System.Windows.Forms.Button btn_StartGen;
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.ListBox lbLog;
+        private System.Windows.Forms.Button btn_StartPredGen;
     }
 }
 

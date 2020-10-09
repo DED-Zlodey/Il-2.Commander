@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -30,6 +31,32 @@ namespace Il_2.Commander
         {
             string dec_sep = Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator;
             return value.Replace(",", dec_sep).Replace(".", dec_sep);
+        }
+
+        /// <summary>
+        /// Читает файл и возвращает списком
+        /// </summary>
+        /// <param name="path">Принимает путь до файла</param>
+        /// <returns>Возвращает коллекцию строк из файла, если файл существует. Если файла нет, вернет пустую коллекцию строк</returns>
+        public static List<string> GetFile(string path)
+        {
+            List<string> str = new List<string>();
+            if (File.Exists(path))
+            {
+                StreamReader read = new StreamReader(path, Encoding.Default);
+                while (true)
+                {
+                    string s = read.ReadLine();
+                    if (s != null)
+                    {
+                        str.Add(s);
+                    }
+                    else
+                        break;
+                }
+                read.Close();
+            }
+            return str;
         }
     }
 }

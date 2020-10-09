@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace Il_2.Commander.Commander
 {
-    public delegate void delShowLog(string Message);
+    public delegate void delShowLog(string pathLog);
     class Watcher
     {
         /// <summary>

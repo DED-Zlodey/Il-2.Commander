@@ -14,7 +14,7 @@ namespace Il_2.Commander
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new CommEx());
+            Application.Run(new Form1());
         }
     }
 }
