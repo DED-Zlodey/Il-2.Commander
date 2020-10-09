@@ -8,6 +8,7 @@
     <ApplicationIcon>46182.ico</ApplicationIcon>
     <Copyright>-DED-Zlodey</Copyright>
     <PackageProjectUrl>https://il2-expert.ru/</PackageProjectUrl>
+    <Description>Управление виртуальной воздушной войной.</Description>
   </PropertyGroup>
 
   <ItemGroup>
