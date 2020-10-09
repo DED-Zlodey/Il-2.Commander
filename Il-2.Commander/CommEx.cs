@@ -1,12 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Il_2.Commander
@@ -20,7 +13,7 @@ namespace Il_2.Commander
             InitializeComponent();
             SetApp.SetUp();
             btn_Stop.Enabled = false;
-            busy = true;          
+            busy = true;
         }
 
         private void btn_StartGen_Click(object sender, EventArgs e)
