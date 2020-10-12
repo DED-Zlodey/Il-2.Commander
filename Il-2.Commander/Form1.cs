@@ -14,7 +14,7 @@ namespace Il_2.Commander
         public Form1()
         {
             InitializeComponent();
-            lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
             SetApp.SetUp();
             btn_Stop.Enabled = false;
             busy = true;
@@ -167,7 +167,7 @@ namespace Il_2.Commander
 
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
-            lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
     }
 }
