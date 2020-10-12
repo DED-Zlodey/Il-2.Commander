@@ -36,9 +36,16 @@ namespace Il_2.Commander.Commander
         {
             using (var hubConnection = new HubConnection(Host, useDefaultUrl: false))
             {
-                IHubProxy stockTickerHubProxy = hubConnection.CreateHubProxy("hubMap");
-                await hubConnection.Start();
-                await stockTickerHubProxy.Invoke("CommanderDoor", new object[] { Token, eventname });
+                try
+                {
+                    IHubProxy stockTickerHubProxy = hubConnection.CreateHubProxy("hubMap");
+                    await hubConnection.Start();
+                    await stockTickerHubProxy.Invoke("CommanderDoor", new object[] { Token, eventname });
+                }
+                catch
+                {
+
+                }
             }
         }
 
@@ -57,9 +64,16 @@ namespace Il_2.Commander.Commander
         {
             using (var hubConnection = new HubConnection(Host, useDefaultUrl: false))
             {
-                IHubProxy stockTickerHubProxy = hubConnection.CreateHubProxy("hubMap");
-                await hubConnection.Start();
-                await stockTickerHubProxy.Invoke("CommanderDoor", new object[] { Token, eventname });
+                try
+                {
+                    IHubProxy stockTickerHubProxy = hubConnection.CreateHubProxy("hubMap");
+                    await hubConnection.Start();
+                    await stockTickerHubProxy.Invoke("CommanderDoor", new object[] { Token, eventname });
+                }
+                catch
+                {
+
+                }
             }
         }
     }

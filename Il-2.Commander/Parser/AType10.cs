@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using Il_2.Commander.Commander;
+using System.Text.RegularExpressions;
 
 namespace Il_2.Commander.Parser
 {
@@ -30,6 +31,7 @@ namespace Il_2.Commander.Parser
         public string SKIN { get; private set; }
         public int WM { get; private set; }
         public string GameStatus { get; private set; }
+        public Player Player { get; set; }
 
         #region Регулярки
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");

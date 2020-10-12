@@ -18,7 +18,13 @@ namespace Il_2.Commander.Data
         }
         public virtual DbSet<AirFields> AirFields { get; set; }
         public virtual DbSet<CompTarget> CompTarget { get; set; }
+        /// <summary>
+        /// Направление атаки синих. Точки красные
+        /// </summary>
         public virtual DbSet<DStrikeBlue> DStrikeBlue { get; set; }
+        /// <summary>
+        /// Направление атаки Красных. Точки синие.
+        /// </summary>
         public virtual DbSet<DStrikeRed> DStrikeRed { get; set; }
         public virtual DbSet<DurationMission> DurationMission { get; set; }
         public virtual DbSet<GraphCity> GraphCity { get; set; }

@@ -1,8 +1,6 @@
 ﻿using Il_2.Commander.Commander;
 using System;
-using System.Diagnostics;
 using System.Drawing;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -11,17 +9,15 @@ namespace Il_2.Commander
     public partial class Form1 : Form
     {
         public static bool busy;
-        private Process processGenerator;
         private HubMessenger messenger;
         private CommanderCL commander;
         public Form1()
         {
             InitializeComponent();
+            lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             SetApp.SetUp();
             btn_Stop.Enabled = false;
             busy = true;
-            //lbLog.DrawMode = DrawMode.OwnerDrawFixed;
-            //lbLog.DrawItem += lbLog_DrawItem;
             messenger = new HubMessenger();
             Action hubstart = () =>
             {
@@ -29,44 +25,69 @@ namespace Il_2.Commander
             };
             Task taskhubstart = Task.Factory.StartNew(hubstart);
             commander = new CommanderCL();
+            commander.GetLogStr += Commander_GetLogStr;
+            commander.GetOfficerTime += Commander_GetOfficerTime;
+            commander.GetLogArray += Commander_GetLogArray;
         }
 
-        private void lbLog_DrawItem(object sender, DrawItemEventArgs e)
+        private void Commander_GetLogArray(string[] array)
         {
-            if (e.Index > -1)
+            var counter = lvLog.Items.Count;
+            foreach (var item in array)
             {
-                e.DrawBackground();
-                Graphics g = e.Graphics;
-                g.FillRectangle(new SolidBrush(Color.White), e.Bounds);
-                ListBox lb = (ListBox)sender;
-                if ((e.State & DrawItemState.Selected) == DrawItemState.Selected)
+                ListViewItem lvi = new ListViewItem();
+                lvi.Text = item;
+                if ((counter % 2) == 0)
                 {
-                    e.Graphics.FillRectangle(Brushes.DarkRed, e.Bounds);
-                    e.Graphics.DrawString(lb.Items[e.Index].ToString(), e.Font, Brushes.White, e.Bounds);
+                    lvi.BackColor = Color.WhiteSmoke;
                 }
                 else
                 {
-                    if (e.Index % 2 == 1)
-                    {
-                        e.Graphics.FillRectangle(Brushes.WhiteSmoke, e.Bounds);
-                    }
-                    else
-                    {
-                        e.Graphics.FillRectangle(Brushes.LightGray, e.Bounds);
-                    }
-                    e.Graphics.DrawString(lb.Items[e.Index].ToString(), e.Font, Brushes.Black, e.Bounds);
+                    lvi.BackColor = Color.LightGray;
                 }
-                e.DrawFocusRectangle();
+                BeginInvoke((MethodInvoker)(() => lvLog.Items.Add(lvi)));
+                counter++;
             }
+            BeginInvoke((MethodInvoker)(() => lvLog.Items[lvLog.Items.Count - 1].EnsureVisible()));
         }
 
+        private void Commander_GetLogStr(string Message, Color color)
+        {
+            var counter = lvLog.Items.Count;
+            ListViewItem lvi = new ListViewItem();
+            lvi.Text = Message;
+            lvi.ForeColor = color;
+            if ((counter % 2) == 0)
+            {
+                lvi.BackColor = Color.WhiteSmoke;
+            }
+            else
+            {
+                lvi.BackColor = Color.LightGray;
+            }
+            BeginInvoke((MethodInvoker)(() => lvLog.Items.Add(lvi)));
+            BeginInvoke((MethodInvoker)(() => lvLog.Items[lvLog.Items.Count - 1].EnsureVisible()));
+        }
+
+        /// <summary>
+        /// Старт таймера для разработки плана наступления в следующей миссии
+        /// </summary>
+        /// <param name="Message"></param>
+        private void Commander_GetOfficerTime(string Message, Color color)
+        {
+            timerOfficer.Start();
+        }
         private void btn_StartGen_Click(object sender, EventArgs e)
         {
             btn_Stop.Enabled = false;
             btn_Start.Enabled = false;
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
-            StartGeneration();
+            Action startgen = () =>
+            {
+                commander.StartGeneration();
+            };
+            Task taskstartgen = Task.Factory.StartNew(startgen);
         }
 
         private void btn_Start_Click(object sender, EventArgs e)
@@ -75,6 +96,12 @@ namespace Il_2.Commander
             btn_Start.Enabled = false;
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
+            timerRcon.Start();
+            Action startgen = () =>
+            {
+                commander.Start();
+            };
+            Task taskstartgen = Task.Factory.StartNew(startgen);
         }
 
         private void btn_Stop_Click(object sender, EventArgs e)
@@ -83,6 +110,11 @@ namespace Il_2.Commander
             btn_Start.Enabled = true;
             btn_StartGen.Enabled = true;
             btn_StartPredGen.Enabled = true;
+            Action startgen = () =>
+            {
+                commander.Stop();
+            };
+            Task taskstartgen = Task.Factory.StartNew(startgen);
         }
 
         private void btn_StartPredGen_Click(object sender, EventArgs e)
@@ -91,42 +123,51 @@ namespace Il_2.Commander
             btn_Start.Enabled = false;
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
-        }
-        /// <summary>
-        /// Старт генератора миссии
-        /// </summary>
-        private void StartGeneration()
-        {
-            lbLog.Items.Add("Start Generation...");
-            lbLog.SetSelected(lbLog.Items.Count - 1, true);
-            processGenerator = new Process();
-            ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator);
-            processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
-            processStartInfo.RedirectStandardOutput = true; //Выводить в родительское окно
-            processStartInfo.UseShellExecute = false;
-            processStartInfo.CreateNoWindow = true; // не создавать окно CMD
-            processStartInfo.StandardOutputEncoding = Encoding.GetEncoding(866);
-            processGenerator.StartInfo = processStartInfo;
-            processGenerator.EnableRaisingEvents = true;
-            processGenerator.Exited += new EventHandler(Generation_complete);
-            processGenerator.Start();
-        }
-        /// <summary>
-        /// Вызывается после завершения генерации миссии
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Generation_complete(object sender, EventArgs e)
-        {
-            string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
-            foreach (var item in content)
+            Action startgen = () =>
             {
-                BeginInvoke((MethodInvoker)(() => lbLog.Items.Add(item)));
-                BeginInvoke((MethodInvoker)(() => lbLog.SetSelected(lbLog.Items.Count - 1, true)));
+                commander.StartGeneration("pregen");
+            };
+            Task taskstartgen = Task.Factory.StartNew(startgen);
+        }
+        private void timerOfficer_Tick(object sender, EventArgs e)
+        {
+            timerOfficer.Stop();
+            Action startgen = () =>
+            {
+                commander.StartGeneration();
+            };
+            Task taskstartgen = Task.Factory.StartNew(startgen);
+        }
+
+        private void timerRcon_Tick(object sender, EventArgs e)
+        {
+            Action startgen = () =>
+            {
+                commander.SendRconCommand();
+            };
+            Task taskstartgen = Task.Factory.StartNew(startgen);
+        }
+
+        private void timerLog_Tick(object sender, EventArgs e)
+        {
+            if(busy)
+            {
+                if(CommanderCL.qLog.Count > 0)
+                {
+                    busy = false;
+                    var str = CommanderCL.qLog.Dequeue();
+                    Action startgen = () =>
+                    {
+                        commander.HandleLogFile(str);
+                    };
+                    Task taskstartgen = Task.Factory.StartNew(startgen);
+                }
             }
-            BeginInvoke((MethodInvoker)(() => btn_Start.Enabled = true));
-            BeginInvoke((MethodInvoker)(() => btn_StartGen.Enabled = true));
-            BeginInvoke((MethodInvoker)(() => btn_StartPredGen.Enabled = true));
+        }
+
+        private void Form1_SizeChanged(object sender, EventArgs e)
+        {
+            lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
         }
     }
 }

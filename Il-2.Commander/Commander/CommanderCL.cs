@@ -1,29 +1,49 @@
 ﻿using Il_2.Commander.Data;
+using Il_2.Commander.Parser;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.IO;
-using System.Diagnostics;
-using Il_2.Commander.Parser;
-using Microsoft.EntityFrameworkCore;
 
 namespace Il_2.Commander.Commander
 {
-    public delegate void EventLog(string Message);
+    public delegate void EventLog(string Message, Color color);
+    public delegate void EventLogArray(string[] array);
     class CommanderCL
     {
         public event EventLog GetLogStr;
+        public event EventLog GetOfficerTime;
+        public event EventLogArray GetLogArray;
         private static RconCommunicator rcon;
         private static Random random = new Random();
         private HubMessenger messenger;
         private Process processGenerator;
         private Watcher watcher;
         private Process processDS;
+        /// <summary>
+        /// Очередь Ркон комманд
+        /// </summary>
         private Queue<RconCommand> RconCommands = new Queue<RconCommand>();
         private List<ColInput> ActiveColumn = new List<ColInput>();
+        /// <summary>
+        /// Направление атаки красных. Точки синие.
+        /// </summary>
         private Queue<DStrikeRed> redQ = new Queue<DStrikeRed>();
+        /// <summary>
+        /// Направление атаки синих. Точки красные.
+        /// </summary>
         private Queue<DStrikeBlue> blueQ = new Queue<DStrikeBlue>();
+        /// <summary>
+        /// Текущая точка атаки красных
+        /// </summary>
+        private DStrikeRed currentRedPoint;
+        /// <summary>
+        /// Текущая точка атаки синих
+        /// </summary>
+        private DStrikeBlue currentBluePoint;
         /// <summary>
         /// Тут хранятся цели для атаки красных (сами цели синие) красные атакуют, синие оброняют
         /// </summary>
@@ -41,6 +61,14 @@ namespace Il_2.Commander.Commander
         private DateTime messDurTime = DateTime.Now;
         private int durmess = 30;
         private int DurationMission = 235; // Длительность миссии в минутах
+        bool qrcon = true;
+        private List<AType10> pilotsList = new List<AType10>();
+
+        public CommanderCL()
+        {
+            messenger = new HubMessenger();
+            messenger.SpecStart();
+        }
 
         public void Start()
         {
@@ -50,6 +78,45 @@ namespace Il_2.Commander.Commander
             messenger = new HubMessenger();
             messenger.SpecStart();
             StartServer();
+        }
+        /// <summary>
+        /// Отправка Ркон комманд из очереди
+        /// </summary>
+        public void SendRconCommand()
+        {
+            if (RconCommands.Count > 0 && qrcon)
+            {
+                if (rcon != null && RconCommands.Count > 0)
+                {
+                    qrcon = false;
+                    var result = RconCommands.Dequeue();
+                    if (result != null && result.Type == Rcontype.ChatMsg)
+                    {
+                        rcon.ChatMsg(result.TypeRoom, result.Command, result.RecipientId);
+                    }
+                    if (result != null && result.Type == Rcontype.Input)
+                    {
+                        rcon.ServerInput(result.Command);
+                        GetLogStr("Server Input: " + result.Command, Color.Black);
+                    }
+                    if (result != null && result.Type == Rcontype.Players)
+                    {
+                        var players = rcon.GetPlayerList();
+                        var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                        if (player != null)
+                        {
+                            var mess = "-=COMMANDER=- " + player.Name + " your ping: " + player.Ping;
+                            RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                            RconCommands.Enqueue(wrap);
+                            if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                            {
+                                pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
+                            }
+                        }
+                    }
+                    qrcon = true;
+                }
+            }
         }
         /// <summary>
         /// Приведение базы данных в исходное, стартовое положение. Все инпуты и прочее приводятся в положение "ВЫКЛ"
@@ -201,7 +268,7 @@ namespace Il_2.Commander.Commander
         /// <param name="pathLog">Принимает путь до лог-файла</param>
         private void Watcher_Events(string pathLog)
         {
-            if(pathLog != LastFile)
+            if (pathLog != LastFile)
             {
                 LastFile = pathLog;
                 if (pathLog.Contains("[0].txt"))
@@ -211,15 +278,30 @@ namespace Il_2.Commander.Commander
                     messDurTime = DateTime.Now;
                     ClearPrevMission();
                     dt = DateTime.Now;
-                    GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString());
+                    GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
                     SetDurationMission(1);
                     SavedMissionTimeStart();
                     EnableFields();
+                    InitDirectPoints();
+                    SetAttackPoint();
+                    EnableTargetsToCoalition(201);
+                    EnableTargetsToCoalition(101);
+                    EnableWareHouse();
                 }
                 ReadLogFile(pathLog);
             }
         }
+        public void HandleLogFile(List<string> str)
+        {
+            for (int i = 0; i < str.Count; i++)
+            {
 
+            }
+        }
+        /// <summary>
+        /// Чтение лог-файла, постановка его в очередь на обработку
+        /// </summary>
+        /// <param name="pathLog">Принимает путь до лог-файла</param>
         private void ReadLogFile(string pathLog)
         {
             var str = SetApp.GetFile(pathLog);
@@ -248,7 +330,7 @@ namespace Il_2.Commander.Commander
                 RconCommands.Enqueue(sendall);
                 RconCommands.Enqueue(sendred);
                 RconCommands.Enqueue(sendblue);
-                GetLogStr(mess);
+                GetLogStr(mess, Color.Black);
             }
             if (ts.TotalMinutes >= DurationMission)
             {
@@ -259,17 +341,111 @@ namespace Il_2.Commander.Commander
                     RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
                     RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
                     RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                    GetLogStr(mess);
+                    GetLogStr(mess, Color.Red);
                     RconCommands.Enqueue(sendall);
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
                     ChangeCoalitionPoint();
                     SetEndMission(1);
-                    StartGeneration(); // Старт генератора
+                    StartGeneration("pregen"); // Старт генератора
                 }
             }
             FileInfo fi = new FileInfo(pathLog);
             File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
+        }
+        private void InitDirectPoints()
+        {
+            ExpertDB db = new ExpertDB();
+            var blue = db.DStrikeBlue.ToList();
+            blue.Sort();
+            foreach (var item in blue)
+            {
+                if (item.SerialNumber != 1)
+                    blueQ.Enqueue(item);
+            }
+            var red = db.DStrikeRed.ToList();
+            red.Sort();
+            foreach (var item in red)
+            {
+                if (item.SerialNumber != 1)
+                    redQ.Enqueue(item);
+            }
+            db.Dispose();
+        }
+        /// <summary>
+        /// Устанавливает текущие точки атаки для красных и синих одновременно.
+        /// </summary>
+        private void SetAttackPoint()
+        {
+            if (blueQ.Count > 0)
+            {
+                currentBluePoint = blueQ.Dequeue();
+            }
+            if (redQ.Count > 0)
+            {
+                currentRedPoint = redQ.Dequeue();
+            }
+        }
+        /// <summary>
+        /// Устанавливает текущую точку атаки в заивисимости от коалиции
+        /// </summary>
+        /// <param name="coal">Принимает номер коалиции для которой требуется установить текущую точку атаки</param>
+        private void SetAttackPoint(int coal)
+        {
+            if (coal == 201)
+            {
+                currentBluePoint = blueQ.Dequeue();
+            }
+            if (coal == 101)
+            {
+                currentRedPoint = redQ.Dequeue();
+            }
+        }
+        /// <summary>
+        /// Включение целей вокруг актуальной точки атаки
+        /// </summary>
+        /// <param name="coal">Коалиция</param>
+        private void EnableTargetsToCoalition(int coal)
+        {
+            ExpertDB db = new ExpertDB();
+            if (coal == 201 && currentBluePoint != null)
+            {
+                var targets = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentBluePoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
+                foreach (var item in targets)
+                {
+                    RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                    RconCommands.Enqueue(command);
+                    int id = item.id;
+                    db.ServerInputs.First(x => x.id == id).Enable = 1;
+                }
+            }
+            if (coal == 101 && currentRedPoint != null)
+            {
+                var targets = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentRedPoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
+                foreach (var item in targets)
+                {
+                    RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                    RconCommands.Enqueue(command);
+                    int id = item.id;
+                    db.ServerInputs.First(x => x.id == id).Enable = 1;
+                }
+            }
+            db.SaveChanges();
+            db.Dispose();
+        }
+        private void EnableWareHouse()
+        {
+            ExpertDB db = new ExpertDB();
+            var sinputWH = db.ServerInputs.Where(x => x.GroupInput == 8 && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
+            foreach(var item in sinputWH)
+            {
+                RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                RconCommands.Enqueue(command);
+                int id = item.id;
+                db.ServerInputs.First(x => x.id == id).Enable = 1;
+            }
+            db.SaveChanges();
+            db.Dispose();
         }
         /// <summary>
         /// Изменяет колалицию точек в БД
@@ -288,7 +464,7 @@ namespace Il_2.Commander.Commander
             var maxTour = db.PreSetupMap.Where(x => x.idServ == idServ).Max(x => x.idTour);
             var actualMissId = db.PreSetupMap.Where(x => x.idServ == idServ && x.idMap == 2 && x.Played == false).Min(x => x.id);
             var isMU = db.PreSetupMap.First(x => x.id == actualMissId).PrecType;
-            if(isMU > 0)
+            if (isMU > 0)
             {
                 DurationMission = db.DurationMission.First(x => x.id == 1).DurmissRain;
             }
@@ -305,7 +481,7 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var alltimer = db.MTimer.ToList();
-            foreach(var item in alltimer)
+            foreach (var item in alltimer)
             {
                 db.MTimer.Remove(item);
             }
@@ -330,15 +506,19 @@ namespace Il_2.Commander.Commander
             {
                 RconCommand onfield = new RconCommand(Rcontype.Input, item.Name);
                 RconCommands.Enqueue(onfield);
-                GetLogStr(item.Name);
+                //GetLogStr(item.Name, Color.Black);
             }
             db.Dispose();
         }
+        /// <summary>
+        /// Старт генератора. Запускает полную генерацию миссии
+        /// </summary>
         public void StartGeneration()
         {
-            GetLogStr("Start Generation...");
+            GetLogStr("Start Generation...", Color.Black);
             processGenerator = new Process();
             ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator);
+            processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
             processStartInfo.RedirectStandardOutput = true; //Выводить в родительское окно
             processStartInfo.UseShellExecute = false;
             processStartInfo.CreateNoWindow = true; // не создавать окно CMD
@@ -349,6 +529,37 @@ namespace Il_2.Commander.Commander
             processGenerator.Start();
         }
         /// <summary>
+        /// Запускает предварительную генерацию миссии.
+        /// </summary>
+        /// <param name="predGen">pregen</param>
+        public void StartGeneration(string predGen)
+        {
+            GetLogStr("Start PredGen...", Color.Red);
+            processGenerator = new Process();
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator, predGen);
+            processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
+            processStartInfo.RedirectStandardOutput = true; //Выводить в родительское окно
+            processStartInfo.UseShellExecute = false;
+            processStartInfo.CreateNoWindow = true; // не создавать окно CMD
+            processStartInfo.StandardOutputEncoding = Encoding.GetEncoding(866);
+            processGenerator.StartInfo = processStartInfo;
+            processGenerator.EnableRaisingEvents = true;
+            processGenerator.Exited += new EventHandler(PredGen_complete);
+            processGenerator.Start();
+        }
+        /// <summary>
+        /// Вызывается после завершения предварительной генерации миссии.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void PredGen_complete(object sender, EventArgs e)
+        {
+            string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
+            GetLogArray(content);
+            GetLogStr("Wait start generation...", Color.Black);
+            GetOfficerTime("StartTimeOfficer", Color.Black);
+        }
+        /// <summary>
         /// Вызывается после завершения генерации миссии
         /// </summary>
         /// <param name="sender"></param>
@@ -356,11 +567,8 @@ namespace Il_2.Commander.Commander
         private void Generation_complete(object sender, EventArgs e)
         {
             string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
-            foreach (var item in content)
-            {
-                GetLogStr(item);
-            }
-            GetLogStr("Restart Mission...");
+            GetLogArray(content);
+            GetLogStr("Restart Mission...", Color.Black);
             GetNameNextMission(1);
             ReWriteSDS(SetApp.Config.DirSDS);
             NextMission(SetApp.Config.DirSDS);
@@ -373,7 +581,10 @@ namespace Il_2.Commander.Commander
         {
             FileInfo fi = new FileInfo(path);
             var nameFSDS = fi.Name;
-            rcon.OpenSDS(nameFSDS);
+            if (rcon != null)
+            {
+                rcon.OpenSDS(nameFSDS);
+            }
             if (watcher == null)
             {
                 StartWatcher();
@@ -480,6 +691,89 @@ namespace Il_2.Commander.Commander
                 reSet.Start();
             }
             db.Dispose();
+        }
+        /// <summary>
+        /// Проверка регистрации пилота
+        /// </summary>
+        /// <param name="player">Объект пилота</param>
+        private void CheckRegistration(Player player)
+        {
+            ExpertDB db = new ExpertDB();
+            if (!db.ProfileUser.ToList().Exists(x => x.GameId == player.PlayerId))
+            {
+                if (!db.LinkedAccount.ToList().Exists(x => x.GameID == player.PlayerId))
+                {
+                    var code = GenerationCode(db);
+                    db.LinkedAccount.Add(new LinkedAccount
+                    {
+                        CheckCode = code,
+                        GameID = player.PlayerId,
+                        PilotName = player.Name
+                    });
+                    db.SaveChanges();
+                    var mess = "-=COMMANDER=- " + player.Name + " your registration code: " + code;
+                    RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                    RconCommands.Enqueue(wrap);
+                }
+                else
+                {
+                    var code = db.LinkedAccount.First(x => x.GameID == player.PlayerId).CheckCode;
+                    var mess = "-=COMMANDER=- " + player.Name + " your registration code: " + code;
+                    RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                    RconCommands.Enqueue(wrap);
+                }
+            }
+            db.Dispose();
+        }
+        /// <summary>
+        /// Генерирует строку случайных символов
+        /// </summary>
+        /// <param name="db">Объект базы данных</param>
+        /// <returns>Возвращает строку случайных симолов</returns>
+        private string GenerationCode(ExpertDB db)
+        {
+            var code = GenerateName(6);
+            if (!db.LinkedAccount.ToList().Exists(x => x.CheckCode == code))
+            {
+                return code;
+            }
+            else
+            {
+                return GenerationCode(db);
+            }
+        }
+        /// <summary>
+        /// Генерирует строку случайных символов
+        /// </summary>
+        /// <param name="rnd">Объект рандом</param>
+        /// <param name="passlength">Длинна строки</param>
+        /// <returns>Возвращает случайную строку</returns>
+        private string GenerateName(int passlength)
+        {
+            string iPass = "";
+            string[] arr = { "_", "%", "@", "!", "#", "$", "^", "&", "*", "(", ")", "{", "}",
+                "-", "+", "=", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "B", "C", "D", "F", "G", "H", "J", "K", "L", "M", "N", "P", "Q", "R", "S", "T", "V", "W",
+                "X", "Z", "b", "c", "d", "f", "g", "h", "j", "k", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z", "A", "E", "U", "Y", "a", "e", "i", "o", "u", "y" };
+            for (int i = 0; i < passlength; i++)
+            {
+                iPass = iPass + arr[random.Next(0, arr.Length)];
+            }
+            return iPass;
+        }
+        /// <summary>
+        /// Останавливает сервер и закрывает приложение DServer
+        /// </summary>
+        public void Stop()
+        {
+            if (watcher != null)
+            {
+                watcher.LogEvents -= Watcher_Events;
+            }
+            ClearPrevMission();
+            if(rcon != null)
+            {
+                rcon.Shutdown();
+            }
         }
     }
 }

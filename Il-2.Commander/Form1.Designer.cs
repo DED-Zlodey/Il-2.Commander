@@ -28,18 +28,21 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.TabBG = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.lvLog = new System.Windows.Forms.ListView();
+            this.columnHeader1 = new System.Windows.Forms.ColumnHeader();
             this.btn_StartPredGen = new System.Windows.Forms.Button();
             this.btn_Stop = new System.Windows.Forms.Button();
             this.btn_Start = new System.Windows.Forms.Button();
             this.btn_StartGen = new System.Windows.Forms.Button();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.lbLog = new System.Windows.Forms.ListBox();
+            this.timerOfficer = new System.Windows.Forms.Timer(this.components);
+            this.timerRcon = new System.Windows.Forms.Timer(this.components);
+            this.timerLog = new System.Windows.Forms.Timer(this.components);
             this.TabBG.SuspendLayout();
             this.tabPage1.SuspendLayout();
-            this.tabPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // TabBG
@@ -48,7 +51,6 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.TabBG.Controls.Add(this.tabPage1);
-            this.TabBG.Controls.Add(this.tabPage2);
             this.TabBG.Location = new System.Drawing.Point(12, 12);
             this.TabBG.Name = "TabBG";
             this.TabBG.SelectedIndex = 0;
@@ -57,6 +59,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.lvLog);
             this.tabPage1.Controls.Add(this.btn_StartPredGen);
             this.tabPage1.Controls.Add(this.btn_Stop);
             this.tabPage1.Controls.Add(this.btn_Start);
@@ -68,6 +71,28 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Управление";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // lvLog
+            // 
+            this.lvLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lvLog.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader1});
+            this.lvLog.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.lvLog.FullRowSelect = true;
+            this.lvLog.HideSelection = false;
+            this.lvLog.Location = new System.Drawing.Point(3, 3);
+            this.lvLog.Name = "lvLog";
+            this.lvLog.Size = new System.Drawing.Size(762, 557);
+            this.lvLog.TabIndex = 1;
+            this.lvLog.UseCompatibleStateImageBehavior = false;
+            this.lvLog.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader1
+            // 
+            this.columnHeader1.Text = "Log";
+            this.columnHeader1.Width = 700;
             // 
             // btn_StartPredGen
             // 
@@ -113,29 +138,20 @@
             this.btn_StartGen.UseVisualStyleBackColor = true;
             this.btn_StartGen.Click += new System.EventHandler(this.btn_StartGen_Click);
             // 
-            // tabPage2
+            // timerOfficer
             // 
-            this.tabPage2.Controls.Add(this.lbLog);
-            this.tabPage2.Location = new System.Drawing.Point(4, 24);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(768, 611);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Log";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.timerOfficer.Interval = 300000;
+            this.timerOfficer.Tick += new System.EventHandler(this.timerOfficer_Tick);
             // 
-            // lbLog
+            // timerRcon
             // 
-            this.lbLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lbLog.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-            this.lbLog.FormattingEnabled = true;
-            this.lbLog.ItemHeight = 17;
-            this.lbLog.Location = new System.Drawing.Point(3, 3);
-            this.lbLog.Name = "lbLog";
-            this.lbLog.Size = new System.Drawing.Size(762, 599);
-            this.lbLog.TabIndex = 0;
+            this.timerRcon.Interval = 500;
+            this.timerRcon.Tick += new System.EventHandler(this.timerRcon_Tick);
+            // 
+            // timerLog
+            // 
+            this.timerLog.Interval = 5000;
+            this.timerLog.Tick += new System.EventHandler(this.timerLog_Tick);
             // 
             // Form1
             // 
@@ -147,9 +163,9 @@
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Commander Expert";
+            this.SizeChanged += new System.EventHandler(this.Form1_SizeChanged);
             this.TabBG.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
-            this.tabPage2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -161,9 +177,12 @@
         private System.Windows.Forms.Button btn_Stop;
         private System.Windows.Forms.Button btn_Start;
         private System.Windows.Forms.Button btn_StartGen;
-        private System.Windows.Forms.TabPage tabPage2;
-        private System.Windows.Forms.ListBox lbLog;
         private System.Windows.Forms.Button btn_StartPredGen;
+        private System.Windows.Forms.Timer timerOfficer;
+        private System.Windows.Forms.ListView lvLog;
+        private System.Windows.Forms.Timer timerRcon;
+        private System.Windows.Forms.ColumnHeader columnHeader1;
+        private System.Windows.Forms.Timer timerLog;
     }
 }
 
