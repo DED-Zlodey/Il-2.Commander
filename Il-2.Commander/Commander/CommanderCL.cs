@@ -61,9 +61,9 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public static Queue<List<string>> qLog = new Queue<List<string>>();
         /// <summary>
-        /// Список объектов мостов
+        /// Список инпутов мостов
         /// </summary>
-        private List<AType12> Bridges = new List<AType12>();
+        private List<InputsBridge> Bridges = new List<InputsBridge>();
         /// <summary>
         /// Список объектов колонн
         /// </summary>
@@ -415,7 +415,6 @@ namespace Il_2.Commander.Commander
                     }
                     if (aType.TYPE.Contains("bridge"))
                     {
-                        Bridges.Add(aType);
                         var mess = "Spawn Bridge: " + aType.TYPE + " " + aType.COUNTRY;
                         GetLogStr(mess, Color.DarkGreen);
                     }
@@ -436,7 +435,10 @@ namespace Il_2.Commander.Commander
                 Form1.busy = true;
             }
         }
-
+        /// <summary>
+        /// Обработка всех киллов в списке
+        /// </summary>
+        /// <param name="atype3">Список объектов AType:3</param>
         private void CheckDestroyTarget(List<AType3> atype3)
         {
             foreach(var item in atype3)
@@ -449,10 +451,9 @@ namespace Il_2.Commander.Commander
                 {
                     bool isTarget = false;
                     bool isBridge = false;
-                    bool isWH = false;
                     for(int i = 0; i < ActiveTargets.Count; i++)
                     {
-                        if(ActiveTargets[i].GroupInput != 8)
+                        if(ActiveTargets[i].GroupInput != 8 && ActiveTargets[i].Enable == true)
                         {
                             var Xres = ActiveTargets[i].XPos - item.XPos;
                             var Zres = ActiveTargets[i].ZPos - item.ZPos;
@@ -461,21 +462,111 @@ namespace Il_2.Commander.Commander
                             if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                             {
                                 isTarget = true;
-                                KillTargetObj(item, ActiveTargets[i]);
+                                KillTargetObj(ActiveTargets[i]);
+                                break;
                             }
                         }
                     }
+                    if(isTarget)
+                    {
+                        continue;
+                    }
+                    for(int i = 0; i < Bridges.Count; i++)
+                    {
+                        var Xres = Bridges[i].XPos - item.XPos;
+                        var Zres = Bridges[i].ZPos - item.ZPos;
+                        double min = -0.1;
+                        double max = 0.1;
+                        if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                        {
+                            isBridge = true;
+                            KillBridge(Bridges[i]);
+                            break;
+                        }
+                    }
+                    if(isBridge)
+                    {
+                        continue;
+                    }
+                    if(HandlingForWH(item))
+                    {
+                        continue;
+                    }
+
                 }
                 
             }
         }
-        private void KillTargetObj(AType3 aType, CompTarget target)
+        /// <summary>
+        /// Уничтожение объекта внутри цели. А так же проверка уничтожена ли цель целиком. Если уничтожена цель выключается.
+        /// </summary>
+        /// <param name="target">Объект цели</param>
+        private void KillTargetObj(CompTarget target)
         {
-
+            ExpertDB db = new ExpertDB();
+            var ent = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
+            ActiveTargets.First(x => x.id == target.id).Destroed = target.Destroed + 1;
+            db.CompTarget.First(x => x.id == target.id).Destroed = target.Destroed + 1;
+            var countMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).ToList().Count;
+            var countDestroyedMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).Sum(x => x.Destroed);
+            var countDestroyed = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex).Sum(x => x.Destroed);
+            if(countMandatory >= countDestroyedMandatory)
+            {
+                if(target.TotalWeigth >= countDestroyed)
+                {
+                    RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                    RconCommands.Enqueue(command);
+                    var color = Color.Black;
+                    var coalstr = string.Empty;
+                    if(ent.Coalition == 201)
+                    {
+                        color = Color.DarkBlue;
+                        coalstr = "Allies destroyed ";
+                    }
+                    if(ent.Coalition == 101)
+                    {
+                        color = Color.DarkRed;
+                        coalstr = "Axis destroyed ";
+                    }
+                    var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                    GetLogStr(mess, color);
+                    db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                    RconCommands.Enqueue(sendall);
+                    RconCommands.Enqueue(sendred);
+                    RconCommands.Enqueue(sendblue);
+                }
+            }
+            db.SaveChanges();
+            var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
+            db.Dispose();
+            if (alltargets.Count == 0)
+            {
+                SetAttackPoint(ent.Coalition);
+                EnableTargetsToCoalition(ent.Coalition);
+            }
         }
-        private void KillBridge(AType3 aType)
+        /// <summary>
+        /// Уничтожение моста. Остановка колонны перед мостом, а так же включение запрета на отправку данной колонны
+        /// </summary>
+        /// <param name="aType">Объект AType:3</param>
+        private void KillBridge(InputsBridge bridge)
         {
-            var ent = Bridges.First(x => x.ID == aType.TID);
+            ExpertDB db = new ExpertDB();
+            var allbridges = db.InputsBridge.Where(x => x.XPos == bridge.XPos && x.ZPos == bridge.ZPos && !x.Destroyed).ToList();
+            foreach(var item in allbridges)
+            {
+                RconCommand command = new RconCommand(Rcontype.Input, item.NameBridge);
+                RconCommands.Enqueue(command);
+                var mess = "-=COMMANDER=-: Bridge: " + item.NameBridge + " Destroyed ";
+                GetLogStr(mess, Color.DarkMagenta);
+                db.ColInput.First(x => x.NameCol == bridge.NameColumn).Permit = false;
+                db.InputsBridge.First(x => x.XPos == bridge.XPos && x.ZPos == bridge.ZPos && !x.Destroyed).Destroyed = true;
+            }
+            db.SaveChanges();
+            db.Dispose();
         }
         /// <summary>
         /// Обработка уничтожения транспортной единицы
@@ -678,10 +769,11 @@ namespace Il_2.Commander.Commander
             db.SaveChanges();
             db.Dispose();
         }
-        private void HandlingForWH(AType3 aType)
+        private bool HandlingForWH(AType3 aType)
         {
             ExpertDB db = new ExpertDB();
             var targets = db.TargetBlock.ToList();
+            bool isWH = false;
             foreach (var item in targets)
             {
                 var Xres = aType.XPos - item.XPos;
@@ -707,11 +799,14 @@ namespace Il_2.Commander.Commander
                                 Damage = 1
                             });
                         }
+                        isWH = true;
+                        break;
                     }
                 }
             }
             db.SaveChanges();
             db.Dispose();
+            return isWH;
         }
         /// <summary>
         /// Включает все полевые склады
@@ -1080,6 +1175,33 @@ namespace Il_2.Commander.Commander
             if(rcon != null)
             {
                 rcon.Shutdown();
+            }
+        }
+        /// <summary>
+        /// Возвращает название цели
+        /// </summary>
+        /// <param name="GroupInput">Номер цели</param>
+        /// <returns>Возвращает название цели</returns>
+        private string GetNameTarget(int GroupInput)
+        {
+            switch (GroupInput)
+            {
+                case 2:
+                    return "Artillery";
+                case 3:
+                    return "Bridge";
+                case 5:
+                    return "Fort area";
+                case 6:
+                    return "Warehouse fuel";
+                case 7:
+                    return "Tanks reserve";
+                case 9:
+                    return "Infantry";
+                case 10:
+                    return "Airfield";
+                default:
+                    return string.Empty;
             }
         }
     }
