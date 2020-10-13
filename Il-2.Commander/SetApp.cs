@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -57,6 +58,18 @@ namespace Il_2.Commander
                 read.Close();
             }
             return str;
+        }
+        /// <summary>
+        /// Возвращает длину отрезка между двумя точками
+        /// </summary>
+        /// <param name="x1">Координата Х первой точки</param>
+        /// <param name="y1">Координата Y первой точки</param>
+        /// <param name="x2">Координата Х второй точки</param>
+        /// <param name="y2">Координата Y второй точки</param>
+        /// <returns></returns>
+        public static double GetDistance(double x1, double y1, double x2, double y2)
+        {
+            return Math.Sqrt(Math.Pow(x1 - x2, 2) + Math.Pow(y1 - y2, 2));
         }
     }
 }

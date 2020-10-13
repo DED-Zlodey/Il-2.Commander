@@ -30,7 +30,7 @@ namespace Il_2.Commander.Parser
         public double FUEL { get; private set; }
         public string SKIN { get; private set; }
         public int WM { get; private set; }
-        public string GameStatus { get; private set; }
+        public string GameStatus { get; set; }
         public Player Player { get; set; }
 
         #region Регулярки

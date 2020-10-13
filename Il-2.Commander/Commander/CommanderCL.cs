@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Il_2.Commander.Commander
 {
@@ -27,6 +28,9 @@ namespace Il_2.Commander.Commander
         /// Очередь Ркон комманд
         /// </summary>
         private Queue<RconCommand> RconCommands = new Queue<RconCommand>();
+        /// <summary>
+        /// Список активных колонн
+        /// </summary>
         private List<ColInput> ActiveColumn = new List<ColInput>();
         /// <summary>
         /// Направление атаки красных. Точки синие.
@@ -52,8 +56,30 @@ namespace Il_2.Commander.Commander
         /// Тут хранятся цели для атаки синих (сами цели красные) синие атакуют, красные оброняют
         /// </summary>
         private List<Target> blueTarget = new List<Target>();
+        /// <summary>
+        /// Очередь из лог-файлов
+        /// </summary>
         public static Queue<List<string>> qLog = new Queue<List<string>>();
+        /// <summary>
+        /// Список объектов мостов
+        /// </summary>
         private List<AType12> Bridges = new List<AType12>();
+        /// <summary>
+        /// Список объектов колонн
+        /// </summary>
+        private List<AType12> ColumnAType12 = new List<AType12>();
+        /// <summary>
+        /// Список статиков засветившихся в логах
+        /// </summary>
+        private List<AType12> Blocks = new List<AType12>();
+        /// <summary>
+        /// Список активированных инпутов разведки
+        /// </summary>
+        private List<ServerInputs> LRecon = new List<ServerInputs>();
+        /// <summary>
+        /// Активные цели.
+        /// </summary>
+        private List<CompTarget> ActiveTargets = new List<CompTarget>();
         private string LastFile { get; set; }
         private string NameMission = string.Empty;
         private bool TriggerTime = true;
@@ -63,6 +89,11 @@ namespace Il_2.Commander.Commander
         private int DurationMission = 235; // Длительность миссии в минутах
         bool qrcon = true;
         private List<AType10> pilotsList = new List<AType10>();
+        private List<Player> onlinePlayers = new List<Player>();
+
+        #region Регулярки
+        private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
+        #endregion
 
         public CommanderCL()
         {
@@ -293,10 +324,208 @@ namespace Il_2.Commander.Commander
         }
         public void HandleLogFile(List<string> str)
         {
+            List<AType3> atype3 = new List<AType3>();
             for (int i = 0; i < str.Count; i++)
             {
-
+                if (str[i].Contains("AType:10 "))
+                {
+                    AType10 aType = new AType10(str[i]);
+                    RconCommand wrap = new RconCommand(Rcontype.Players, aType);
+                    RconCommands.Enqueue(wrap);
+                    pilotsList.Add(aType);
+                    if (onlinePlayers.Exists(x => x.PlayerId == aType.LOGIN))
+                    {
+                        onlinePlayers.First(x => x.PlayerId == aType.LOGIN).IngameStatus = GameStatusPilot.Parking.ToString();
+                        onlinePlayers.First(x => x.PlayerId == aType.LOGIN).Coalition = aType.COUNTRY;
+                    }
+                }
+                if (str[i].Contains("AType:16 "))
+                {
+                    var aType = new AType16(str[i]);
+                    if (pilotsList.Exists(x => x.PID == aType.BOTID))
+                    {
+                        var playerid = pilotsList.First(x => x.PID == aType.BOTID).LOGIN;
+                        if (onlinePlayers.Exists(x => x.PlayerId == playerid))
+                        {
+                            onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.Spectator.ToString();
+                        }
+                        var ent = pilotsList.FirstOrDefault(x => x.PID == aType.BOTID);
+                        if (ent != null)
+                        {
+                            pilotsList.Remove(pilotsList.First(x => x.PLID == ent.PLID));
+                        }
+                    }
+                }
+                if (str[i].Contains("AType:3 "))
+                {
+                    AType3 aType = new AType3(str[i]);
+                    if (!pilotsList.Exists(x => x.PID == aType.TID) && !pilotsList.Exists(x => x.PLID == aType.TID))
+                    {
+                        atype3.Add(aType);
+                    }
+                }
+                if (str[i].Contains("AType:5 "))
+                {
+                    var aType = new AType5(str[i]);
+                    if (pilotsList.Exists(x => x.PLID == aType.PID))
+                    {
+                        pilotsList.First(x => x.PLID == aType.PID).GameStatus = GameStatusPilot.InFlight.ToString();
+                        var playerid = pilotsList.First(x => x.PLID == aType.PID).LOGIN;
+                        if (onlinePlayers.Exists(x => x.PlayerId == playerid))
+                        {
+                            onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
+                        }
+                    }
+                }
+                if (str[i].Contains("AType:6 "))
+                {
+                    var aType = new AType6(str[i]);
+                    if (pilotsList.Exists(x => x.PLID == aType.PID))
+                    {
+                        pilotsList.First(x => x.PLID == aType.PID).GameStatus = GameStatusPilot.Parking.ToString();
+                        var playerid = pilotsList.First(x => x.PLID == aType.PID).LOGIN;
+                        if (onlinePlayers.Exists(x => x.PlayerId == playerid))
+                        {
+                            onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
+                        }
+                        var ent = pilotsList.First(x => x.PLID == aType.PID);
+                        if (ent.TYPE.Contains("Ju 52 3mg4e"))
+                        {
+                            EnableRecon(aType, ent);
+                        }
+                    }
+                }
+                if (str[i].Contains("AType:8 "))
+                {
+                    var aType = new AType8(str[i]);
+                    if (aType.ICTYPE == -1 && aType.TYPE == 15)
+                    {
+                        //DisableColumn(aType);
+                    }
+                    var mess = "Objective: " + aType.OBJID.ToString() + " TYPE:" + aType.TYPE + " ICTYPE:" + aType.ICTYPE;
+                    GetLogStr(mess, Color.DarkGreen);
+                }
+                if (str[i].Contains("AType:12 "))
+                {
+                    AType12 aType = new AType12(str[i]);
+                    if (ActiveColumn.Exists(x => x.NameCol.Equals(aType.NAME)))
+                    {
+                        aType.Unit = ActiveColumn.Find(x => x.NameCol.Equals(aType.NAME)).Unit;
+                        ColumnAType12.Add(aType);
+                    }
+                    if (aType.TYPE.Contains("bridge"))
+                    {
+                        Bridges.Add(aType);
+                        var mess = "Spawn Bridge: " + aType.TYPE + " " + aType.COUNTRY;
+                        GetLogStr(mess, Color.DarkGreen);
+                    }
+                    if(aType.NAME.Equals("BlocksArray"))
+                    {
+                        Blocks.Add(aType);
+                    }
+                }
             }
+            if (atype3.Count > 0 && TriggerTime)
+            {
+                CheckDestroyTarget(atype3);
+            }
+            if (TriggerTime)
+            {
+                //StartedColumn(101);
+                //StartedColumn(201);
+                Form1.busy = true;
+            }
+        }
+
+        private void CheckDestroyTarget(List<AType3> atype3)
+        {
+            foreach(var item in atype3)
+            {
+                if(ColumnAType12.Exists(x => x.ID == item.TID))
+                {
+                    KillUnitColumn(item);
+                }
+                else
+                {
+                    bool isTarget = false;
+                    bool isBridge = false;
+                    bool isWH = false;
+                    for(int i = 0; i < ActiveTargets.Count; i++)
+                    {
+                        if(ActiveTargets[i].GroupInput != 8)
+                        {
+                            var Xres = ActiveTargets[i].XPos - item.XPos;
+                            var Zres = ActiveTargets[i].ZPos - item.ZPos;
+                            double min = -0.1;
+                            double max = 0.1;
+                            if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                            {
+                                isTarget = true;
+                                KillTargetObj(item, ActiveTargets[i]);
+                            }
+                        }
+                    }
+                }
+                
+            }
+        }
+        private void KillTargetObj(AType3 aType, CompTarget target)
+        {
+
+        }
+        private void KillBridge(AType3 aType)
+        {
+            var ent = Bridges.First(x => x.ID == aType.TID);
+        }
+        /// <summary>
+        /// Обработка уничтожения транспортной единицы
+        /// </summary>
+        /// <param name="aType">Объект AType:3</param>
+        private void KillUnitColumn(AType3 aType)
+        {
+            var ent = ColumnAType12.First(x => x.ID == aType.TID);
+            var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
+            ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits + 1;
+            if (pilotsList.Exists(x => x.PLID == aType.AID))
+            {
+                var pilot = pilotsList.First(x => x.PLID == aType.AID);
+                var mess = "Pilot: " + pilot.NAME + " Coalition: " + pilot.COUNTRY + " Destroyed: " + ent.TYPE;
+                GetLogStr(mess, Color.DarkGreen);
+            }
+            if (column.DestroyedUnits >= column.Unit)
+            {
+                string coal = string.Empty;
+                if(column.Coalition == 201)
+                {
+                    coal = "Axis";
+                }
+                if(column.Coalition == 101)
+                {
+                    coal = "Allies";
+                }
+                var mess = "-=COMMANDER=-: Column for warehouse: " + column.NWH + " Coalition: " + coal + " Destroyed units: " + column.DestroyedUnits;
+                GetLogStr(mess, Color.DarkRed);
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+                DisableColumn(column);
+            }
+        }
+        /// <summary>
+        /// Записывает в БД сколько уничтожено транспорта в колонне и маркирует колонну как выключенную.
+        /// </summary>
+        /// <param name="column">Объект колонна</param>
+        private void DisableColumn(ColInput column)
+        {
+            ExpertDB db = new ExpertDB();
+            db.ColInput.First(x => x.id == column.id).Active = false;
+            db.ColInput.First(x => x.id == column.id).DestroyedUnits = column.DestroyedUnits;
+            db.SaveChanges();
+            db.Dispose();
+            ActiveColumn.Remove(column);
         }
         /// <summary>
         /// Чтение лог-файла, постановка его в очередь на обработку
@@ -410,29 +639,83 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             if (coal == 201 && currentBluePoint != null)
             {
-                var targets = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentBluePoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
-                foreach (var item in targets)
+                var inputs = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentBluePoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
+                foreach (var item in inputs)
                 {
                     RconCommand command = new RconCommand(Rcontype.Input, item.Name);
                     RconCommands.Enqueue(command);
                     int id = item.id;
                     db.ServerInputs.First(x => x.id == id).Enable = 1;
+                    var targets = db.CompTarget.Where(x => x.GroupInput == item.GroupInput && x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).ToList();
+                    for (int i = 0; i < targets.Count; i++)
+                    {
+                        int tarid = targets[i].id;
+                        db.CompTarget.First(x => x.id == tarid).Enable = true;
+                        targets[i].Enable = true;
+                    }
+                    ActiveTargets.AddRange(targets);
                 }
             }
             if (coal == 101 && currentRedPoint != null)
             {
-                var targets = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentRedPoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
-                foreach (var item in targets)
+                var inputs = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentRedPoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
+                foreach (var item in inputs)
                 {
                     RconCommand command = new RconCommand(Rcontype.Input, item.Name);
                     RconCommands.Enqueue(command);
                     int id = item.id;
                     db.ServerInputs.First(x => x.id == id).Enable = 1;
+                    var targets = db.CompTarget.Where(x => x.GroupInput == item.GroupInput && x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).ToList();
+                    for (int i = 0; i < targets.Count; i++)
+                    {
+                        int tarid = targets[i].id;
+                        db.CompTarget.First(x => x.id == tarid).Enable = true;
+                        targets[i].Enable = true;
+                    }
+                    ActiveTargets.AddRange(targets);
                 }
             }
             db.SaveChanges();
             db.Dispose();
         }
+        private void HandlingForWH(AType3 aType)
+        {
+            ExpertDB db = new ExpertDB();
+            var targets = db.TargetBlock.ToList();
+            foreach (var item in targets)
+            {
+                var Xres = aType.XPos - item.XPos;
+                var Zres = aType.ZPos - item.ZPos;
+                double min = -0.1;
+                double max = 0.1;
+                if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                {
+                    if (Blocks.Exists(x => x.TICK == aType.TICK && x.ID == aType.TID))
+                    {
+                        var ent = Blocks.FindLast(x => x.TICK == aType.TICK && x.ID == aType.TID);
+                        if(ent.TYPE.Contains("[") && ent.TYPE.Contains("]"))
+                        {
+                            var res = ent.TYPE.Replace("[", "{").Replace("]", "}");
+                            var result = reg_brackets.Match(res).Value;
+                            var array = result.Split(',');
+                            var index = int.Parse(array[1]);
+                            db.DamageLog.Add(new DamageLog
+                            {
+                                BID = item.BID,
+                                StructId = index,
+                                WHID = item.WHID,
+                                Damage = 1
+                            });
+                        }
+                    }
+                }
+            }
+            db.SaveChanges();
+            db.Dispose();
+        }
+        /// <summary>
+        /// Включает все полевые склады
+        /// </summary>
         private void EnableWareHouse()
         {
             ExpertDB db = new ExpertDB();
@@ -508,6 +791,30 @@ namespace Il_2.Commander.Commander
                 RconCommands.Enqueue(onfield);
                 //GetLogStr(item.Name, Color.Black);
             }
+            db.Dispose();
+        }
+        /// <summary>
+        /// Включает иконки разведки
+        /// </summary>
+        /// <param name="type6">AType:6 объект</param>
+        /// <param name="type10">AType:10 объект</param>
+        private void EnableRecon(AType6 type6, AType10 type10)
+        {
+            ExpertDB db = new ExpertDB();
+            var allrecon = db.ServerInputs.Where(x => x.Name.Contains("Recon_") && x.Coalition != type10.COUNTRY && x.Enable == 0).ToList();
+            for (int i = 0; i < allrecon.Count; i++)
+            {
+                var dist = SetApp.GetDistance(type6.ZPos, type6.XPos, allrecon[i].ZPos, allrecon[i].XPos);
+                if (dist <= 3000 && !LRecon.Exists(x => x.Name.Equals(allrecon[i].Name)))
+                {
+                    RconCommand wrap = new RconCommand(Rcontype.Input, allrecon[i].Name);
+                    RconCommands.Enqueue(wrap);
+                    LRecon.Add(allrecon[i]);
+                    var ereconname = allrecon[i].Name;
+                    db.ServerInputs.First(x => x.Name.Equals(ereconname)).Enable = 1;
+                }
+            }
+            db.SaveChanges();
             db.Dispose();
         }
         /// <summary>
