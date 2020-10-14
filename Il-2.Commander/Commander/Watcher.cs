@@ -40,7 +40,7 @@ namespace Il_2.Commander.Commander
         private void MakeEvents(string FileName)
         {
             FileInfo fi = new FileInfo(FileName);
-            LogEvents(string.Format(fi.FullName));
+            LogEvents?.Invoke(string.Format(fi.FullName));
         }
     }
 }

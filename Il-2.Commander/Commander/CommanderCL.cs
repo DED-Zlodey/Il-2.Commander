@@ -80,6 +80,10 @@ namespace Il_2.Commander.Commander
         /// Активные цели.
         /// </summary>
         private List<CompTarget> ActiveTargets = new List<CompTarget>();
+        /// <summary>
+        /// Отложенная отправка сообщений в чат. Имитируется задержка связи. О нападении сообщается не сразу.
+        /// </summary>
+        private List<DeferredCommand> deferredCommands = new List<DeferredCommand>();
         private string LastFile { get; set; }
         private string NameMission = string.Empty;
         private bool TriggerTime = true;
@@ -147,6 +151,30 @@ namespace Il_2.Commander.Commander
                     }
                     qrcon = true;
                 }
+            }
+            if(deferredCommands.Count > 0 && qrcon)
+            {
+                qrcon = false;
+                var localdt = DateTime.Now;
+                List<DeferredCommand> deletes = new List<DeferredCommand>();
+                foreach(var item in deferredCommands)
+                {
+                    var elapsed = localdt - item.CreateTime;
+                    if(elapsed.TotalMinutes >= item.Duration)
+                    {
+                        RconCommand sendmess = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, item.Command, item.Coalition);
+                        RconCommands.Enqueue(sendmess);
+                        deletes.Add(item);
+                    }
+                }
+                if(deletes.Count > 0)
+                {
+                    foreach(var item in deletes)
+                    {
+                        deferredCommands.Remove(item);
+                    }
+                }
+                qrcon = true;
             }
         }
         /// <summary>
@@ -435,6 +463,10 @@ namespace Il_2.Commander.Commander
                 Form1.busy = true;
             }
         }
+        private void StartColumn(int coal)
+        {
+            ExpertDB db = new ExpertDB();
+        }
         /// <summary>
         /// Обработка всех киллов в списке
         /// </summary>
@@ -492,10 +524,26 @@ namespace Il_2.Commander.Commander
                     {
                         continue;
                     }
-
                 }
                 
             }
+        }
+        private void CheckDisableTarget(AType3 aType)
+        {
+            ExpertDB db = new ExpertDB();
+            var targets = db.CompTarget.Where(x => x.Enable == false && x.GroupInput != 8).ToList();
+            foreach(var item in targets)
+            {
+                var Xres = aType.XPos - item.XPos;
+                var Zres = aType.ZPos - item.ZPos;
+                double min = -0.1;
+                double max = 0.1;
+                if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                {
+
+                }
+            }
+            db.Dispose();
         }
         /// <summary>
         /// Уничтожение объекта внутри цели. А так же проверка уничтожена ли цель целиком. Если уничтожена цель выключается.
@@ -544,8 +592,10 @@ namespace Il_2.Commander.Commander
             db.Dispose();
             if (alltargets.Count == 0)
             {
-                SetAttackPoint(ent.Coalition);
-                EnableTargetsToCoalition(ent.Coalition);
+                int invcoal = InvertedCoalition(ent.Coalition);
+                ChangeCoalitionPoint(ent.IndexPoint);
+                SetAttackPoint(invcoal);
+                EnableTargetsToCoalition(invcoal);
             }
         }
         /// <summary>
@@ -665,7 +715,6 @@ namespace Il_2.Commander.Commander
                     RconCommands.Enqueue(sendall);
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
-                    ChangeCoalitionPoint();
                     SetEndMission(1);
                     StartGeneration("pregen"); // Старт генератора
                 }
@@ -796,8 +845,23 @@ namespace Il_2.Commander.Commander
                                 BID = item.BID,
                                 StructId = index,
                                 WHID = item.WHID,
-                                Damage = 1
+                                Damage = 1,
+                                Coalition = item.Coalition
                             });
+                            int messcoal = 0;
+                            if(item.Coalition == 101)
+                            {
+                                messcoal = 1;
+                            }
+                            if (item.Coalition == 201)
+                            {
+                                messcoal = 2;
+                            }
+                            var mess = "-=COMMANDER=-: Warehouse #" + item.WHID + " attacked";
+                            if(!deferredCommands.Exists(x => x.Command == mess))
+                            {
+                                deferredCommands.Add(new DeferredCommand(mess, 2, messcoal));
+                            }
                         }
                         isWH = true;
                         break;
@@ -826,11 +890,34 @@ namespace Il_2.Commander.Commander
             db.Dispose();
         }
         /// <summary>
-        /// Изменяет колалицию точек в БД
+        /// Изменяет колалицию точки в БД
         /// </summary>
-        private void ChangeCoalitionPoint()
+        /// <param name="city">Индекс точки</param>
+        private void ChangeCoalitionPoint(int city)
         {
-            // TODO:
+            ExpertDB db = new ExpertDB();
+            var ent = db.GraphCity.First(x => x.IndexCity == city);
+            var afields = db.AirFields.Where(x => x.IndexCity == city).ToList();
+            db.GraphCity.First(x => x.IndexCity == city).Coalitions = InvertedCoalition(ent.Coalitions);
+            var array = ent.Targets.Split(',');
+            foreach(var item in array)
+            {
+                int index = int.Parse(item);
+                var subpoint = db.GraphCity.FirstOrDefault(x => x.IndexCity == index);
+                if(subpoint != null)
+                {
+                    if(subpoint.Coalitions != ent.Coalitions && subpoint.Name_en.Equals("Outside"))
+                    {
+                        db.GraphCity.First(x => x.IndexCity == index).Coalitions = InvertedCoalition(subpoint.Coalitions);
+                    }
+                }
+            }
+            foreach(var item in afields)
+            {
+                db.AirFields.First(x => x.id == item.id).Coalitions = InvertedCoalition(item.Coalitions);
+            }
+            db.SaveChanges();
+            db.Dispose();
         }
         /// <summary>
         /// Устанавливает длительность миссии исходя из погодных условий. Данные получает из БД.
@@ -1046,34 +1133,22 @@ namespace Il_2.Commander.Commander
             {
                 Bridges.Clear();
             }
-            //if (atype10.Count > 0)
-            //{
-            //    atype10.Clear();
-            //}
+            if (pilotsList.Count > 0)
+            {
+                pilotsList.Clear();
+            }
             if (RconCommands.Count > 0)
             {
                 RconCommands.Clear();
             }
-            //if (LRecon.Count > 0)
-            //{
-            //    LRecon.Clear();
-            //}
-            //if (capturedsRed.Count > 0)
-            //{
-            //    capturedsRed.Clear();
-            //}
-            //if (capturedsBlue.Count > 0)
-            //{
-            //    capturedsBlue.Clear();
-            //}
-            //if (curentPlayers.Count > 0)
-            //{
-            //    curentPlayers.Clear();
-            //}
-            //if (endmessage.Count > 0)
-            //{
-            //    endmessage.Clear();
-            //}
+            if (LRecon.Count > 0)
+            {
+                LRecon.Clear();
+            }
+            if (onlinePlayers.Count > 0)
+            {
+                onlinePlayers.Clear();
+            }
         }
         /// <summary>
         /// Фиксирует завершение миссии в базе данных. Если миссий впереди не осталось, вызывает ReSetCompany
@@ -1202,6 +1277,33 @@ namespace Il_2.Commander.Commander
                     return "Airfield";
                 default:
                     return string.Empty;
+            }
+        }
+        private string GetNameCoalition(int coal)
+        {
+            if(coal == 101)
+            {
+                return "Allies";
+            }
+            else
+            {
+                return "Axis";
+            }
+        }
+        /// <summary>
+        /// Меняет коалицию на противоположную
+        /// </summary>
+        /// <param name="coal">Номер коалиции</param>
+        /// <returns>Возвращает противоположную коалицию</returns>
+        private int InvertedCoalition(int coal)
+        {
+            if(coal == 201)
+            {
+                return 101;
+            }
+            else
+            {
+                return 201;
             }
         }
     }
