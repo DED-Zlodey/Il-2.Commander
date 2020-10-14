@@ -346,6 +346,7 @@ namespace Il_2.Commander.Commander
                     EnableTargetsToCoalition(201);
                     EnableTargetsToCoalition(101);
                     EnableWareHouse();
+                    EnableRecon();
                 }
                 ReadLogFile(pathLog);
             }
@@ -428,7 +429,7 @@ namespace Il_2.Commander.Commander
                     var aType = new AType8(str[i]);
                     if (aType.ICTYPE == -1 && aType.TYPE == 15)
                     {
-                        //DisableColumn(aType);
+                        DisableColumn(aType);
                     }
                     var mess = "Objective: " + aType.OBJID.ToString() + " TYPE:" + aType.TYPE + " ICTYPE:" + aType.ICTYPE;
                     GetLogStr(mess, Color.DarkGreen);
@@ -458,14 +459,39 @@ namespace Il_2.Commander.Commander
             }
             if (TriggerTime)
             {
-                //StartedColumn(101);
-                //StartedColumn(201);
+                StartColumn(101);
+                StartColumn(201);
                 Form1.busy = true;
             }
         }
+        /// <summary>
+        /// Старт колонн
+        /// </summary>
+        /// <param name="coal">номер коалиции</param>
         private void StartColumn(int coal)
         {
             ExpertDB db = new ExpertDB();
+            var bp = db.BattlePonts.Where(x => x.Coalition == coal).ToList();
+            var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
+            var countActivCol = ActiveColumn.Where(x => x.Coalition == coal).ToList().Count;
+            if(countActivCol < 3)
+            {
+                bp.Sort();
+                int iter = 3 - countActivCol;
+                for(int i = 0; i < iter; i++)
+                {
+                    var allcolpoint = allcolumn.Where(x => x.NWH == bp[i].Coalition).ToList();
+                    int rindex = random.Next(0, allcolpoint.Count);
+                    var inputmess = allcolpoint[rindex].NameCol;
+                    var ent = allcolumn.First(x => x.NameCol == inputmess);
+                    ActiveColumn.Add(ent);
+                    RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
+                    RconCommands.Enqueue(command);
+                    db.ColInput.First(x => x.NameCol == inputmess).Active = true;
+                }
+                db.SaveChanges();
+            }
+            db.Dispose();
         }
         /// <summary>
         /// Обработка всех киллов в списке
@@ -612,7 +638,17 @@ namespace Il_2.Commander.Commander
                 RconCommands.Enqueue(command);
                 var mess = "-=COMMANDER=-: Bridge: " + item.NameBridge + " Destroyed ";
                 GetLogStr(mess, Color.DarkMagenta);
-                db.ColInput.First(x => x.NameCol == bridge.NameColumn).Permit = false;
+                string namecol = bridge.NameColumn;
+                var ent = db.ColInput.First(x => x.NameCol == namecol);
+                if(ActiveColumn.Exists(x => x.NameCol == namecol))
+                {
+                    var allArrivalCol = ent.ArrivalCol + 1;
+                    var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
+                    db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = allArrivalUnits;
+                    db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
+                    db.ColInput.First(x => x.NameCol == namecol).Active = false;
+                }
+                db.ColInput.First(x => x.NameCol == namecol).Permit = false;
                 db.InputsBridge.First(x => x.XPos == bridge.XPos && x.ZPos == bridge.ZPos && !x.Destroyed).Destroyed = true;
             }
             db.SaveChanges();
@@ -626,7 +662,8 @@ namespace Il_2.Commander.Commander
         {
             var ent = ColumnAType12.First(x => x.ID == aType.TID);
             var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
-            ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits + 1;
+            column.DestroyedUnits = column.DestroyedUnits + 1;
+            ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
             if (pilotsList.Exists(x => x.PLID == aType.AID))
             {
                 var pilot = pilotsList.First(x => x.PLID == aType.AID);
@@ -653,6 +690,7 @@ namespace Il_2.Commander.Commander
                 RconCommands.Enqueue(sendred);
                 RconCommands.Enqueue(sendblue);
                 DisableColumn(column);
+                ActiveColumn.Remove(column);
             }
         }
         /// <summary>
@@ -667,6 +705,36 @@ namespace Il_2.Commander.Commander
             db.SaveChanges();
             db.Dispose();
             ActiveColumn.Remove(column);
+        }
+        /// <summary>
+        /// Выключает колонну
+        /// </summary>
+        /// <param name="aType">Объект AType:8</param>
+        private void DisableColumn(AType8 aType)
+        {
+            ExpertDB db = new ExpertDB();
+            var mobj = db.MissionObj.ToList();
+            foreach(var item in mobj)
+            {
+                var Xres = aType.XPos - item.XPos;
+                var Zres = aType.ZPos - item.ZPos;
+                double min = -0.1;
+                double max = 0.1;
+                if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                {
+                    var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
+                    var allArrivalCol = ent.ArrivalCol + 1;
+                    var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
+                    string namecol = ent.NameCol;
+                    db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = allArrivalUnits;
+                    db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
+                    db.ColInput.First(x => x.NameCol == namecol).Active = false;
+                    var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
+                    GetLogStr(mess, Color.DarkRed);
+                    ActiveColumn.Remove(ent);
+                }
+            }
+            db.Dispose();
         }
         /// <summary>
         /// Чтение лог-файла, постановка его в очередь на обработку
@@ -848,6 +916,13 @@ namespace Il_2.Commander.Commander
                                 Damage = 1,
                                 Coalition = item.Coalition
                             });
+                            var entbp = db.BattlePonts.First(x => x.WHID == item.WHID && x.Coalition == item.Coalition);
+                            int countbp = 0;
+                            if ((entbp.Point - 1) > 0)
+                            {
+                                countbp = entbp.Point - 1;
+                            }
+                            db.BattlePonts.First(x => x.WHID == item.WHID && x.Coalition == item.Coalition).Point = countbp;
                             int messcoal = 0;
                             if(item.Coalition == 101)
                             {
@@ -890,7 +965,7 @@ namespace Il_2.Commander.Commander
             db.Dispose();
         }
         /// <summary>
-        /// Изменяет колалицию точки в БД
+        /// Изменяет коалицию точки в БД
         /// </summary>
         /// <param name="city">Индекс точки</param>
         private void ChangeCoalitionPoint(int city)
@@ -995,6 +1070,24 @@ namespace Il_2.Commander.Commander
                     var ereconname = allrecon[i].Name;
                     db.ServerInputs.First(x => x.Name.Equals(ereconname)).Enable = 1;
                 }
+            }
+            db.SaveChanges();
+            db.Dispose();
+        }
+        /// <summary>
+        /// Включает все точки разведки.
+        /// </summary>
+        private void EnableRecon()
+        {
+            ExpertDB db = new ExpertDB();
+            var allrecon = db.ServerInputs.Where(x => x.Name.Contains("Recon_") && x.Enable == 0).ToList();
+            for (int i = 0; i < allrecon.Count; i++)
+            {
+                RconCommand wrap = new RconCommand(Rcontype.Input, allrecon[i].Name);
+                RconCommands.Enqueue(wrap);
+                LRecon.Add(allrecon[i]);
+                var ereconname = allrecon[i].Name;
+                db.ServerInputs.First(x => x.Name.Equals(ereconname)).Enable = 1;
             }
             db.SaveChanges();
             db.Dispose();
