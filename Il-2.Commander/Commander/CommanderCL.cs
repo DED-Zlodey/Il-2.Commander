@@ -793,6 +793,7 @@ namespace Il_2.Commander.Commander
             }
             FileInfo fi = new FileInfo(pathLog);
             File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
+            UpdateCurrentPlayers();
         }
         private void InitDirectPoints()
         {
@@ -1264,6 +1265,81 @@ namespace Il_2.Commander.Commander
                 ReSetCompany reSet = new ReSetCompany();
                 reSet.Start();
             }
+            db.Dispose();
+        }
+        private void UpdateCurrentPlayers()
+        {
+            if (rcon != null && qrcon)
+            {
+                qrcon = false;
+                var players = rcon.GetPlayerList();
+                for (int i = 0; i < players.Count; i++)
+                {
+                    if (!onlinePlayers.Exists(x => x.PlayerId == players[i].PlayerId))
+                    {
+                        onlinePlayers.Add(players[i]);
+                        CheckRegistration(players[i]);
+                    }
+                }
+                List<Player> deleteplayers = new List<Player>();
+                for (int i = 0; i < onlinePlayers.Count; i++)
+                {
+                    if (!players.Exists(x => x.PlayerId == onlinePlayers[i].PlayerId))
+                    {
+                        deleteplayers.Add(onlinePlayers[i]);
+                    }
+                }
+                for (int i = 0; i < deleteplayers.Count; i++)
+                {
+                    onlinePlayers.Remove(deleteplayers[i]);
+                }
+                UpdateDBPlayerList();
+                qrcon = true;
+            }
+        }
+        private void UpdateDBPlayerList()
+        {
+            ExpertDB db = new ExpertDB();
+            var dbonline = db.OnlinePilots.ToList();
+            for (int i = 0; i < onlinePlayers.Count; i++)
+            {
+                if (onlinePlayers[i].Cid != 0)
+                {
+                    if(dbonline.Exists(x => x.PlayerId == onlinePlayers[i].PlayerId))
+                    {
+                        if(dbonline.First(x => x.PlayerId == onlinePlayers[i].PlayerId).IngameStatus != onlinePlayers[i].IngameStatus)
+                        {
+                            db.OnlinePilots.First(x => x.PlayerId == onlinePlayers[i].PlayerId).IngameStatus = onlinePlayers[i].IngameStatus;
+                        }
+                        if (dbonline.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Ping != onlinePlayers[i].Ping)
+                        {
+                            db.OnlinePilots.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Ping = onlinePlayers[i].Ping;
+                        }
+                        if (dbonline.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Cid != onlinePlayers[i].Cid)
+                        {
+                            db.OnlinePilots.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Cid = onlinePlayers[i].Cid;
+                        }
+                        if (dbonline.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Coalition != onlinePlayers[i].Coalition)
+                        {
+                            db.OnlinePilots.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Cid = onlinePlayers[i].Cid;
+                        }
+                    }
+                    else
+                    {
+                        db.OnlinePilots.Add(new OnlinePilots
+                        {
+                            Cid = onlinePlayers[i].Cid,
+                            IngameStatus = onlinePlayers[i].IngameStatus,
+                            PilotName = onlinePlayers[i].Name,
+                            Ping = onlinePlayers[i].Ping,
+                            PlayerId = onlinePlayers[i].PlayerId,
+                            ProfileId = onlinePlayers[i].ProfileId,
+                            Coalition = onlinePlayers[i].Coalition
+                        });
+                    }
+                }
+            }
+            db.SaveChanges();
             db.Dispose();
         }
         /// <summary>
