@@ -114,6 +114,10 @@ namespace Il_2.Commander.Commander
             messenger.SpecStart();
             StartServer();
         }
+        public void TestGen()
+        {
+            StartGeneration("pregen");
+        }
         /// <summary>
         /// Отправка Ркон комманд из очереди
         /// </summary>

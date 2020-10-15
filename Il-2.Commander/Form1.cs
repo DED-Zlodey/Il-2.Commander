@@ -1,6 +1,8 @@
 ﻿using Il_2.Commander.Commander;
 using System;
+using System.Diagnostics;
 using System.Drawing;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -11,6 +13,7 @@ namespace Il_2.Commander
         public static bool busy;
         private HubMessenger messenger;
         private CommanderCL commander;
+        private Process processGenerator;
         public Form1()
         {
             InitializeComponent();
@@ -75,7 +78,7 @@ namespace Il_2.Commander
         /// <param name="Message"></param>
         private void Commander_GetOfficerTime(string Message, Color color)
         {
-            timerOfficer.Start();
+            BeginInvoke((MethodInvoker)(() => timerOfficer.Start()));
         }
         private void btn_StartGen_Click(object sender, EventArgs e)
         {
@@ -83,11 +86,7 @@ namespace Il_2.Commander
             btn_Start.Enabled = false;
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
-            Action startgen = () =>
-            {
-                commander.StartGeneration();
-            };
-            Task taskstartgen = Task.Factory.StartNew(startgen);
+            StartGeneration();
         }
 
         private void btn_Start_Click(object sender, EventArgs e)
@@ -123,20 +122,22 @@ namespace Il_2.Commander
             btn_Start.Enabled = false;
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
+            //StartGeneration("pregen");
             Action startgen = () =>
             {
-                commander.StartGeneration("pregen");
+                commander.TestGen();
             };
             Task taskstartgen = Task.Factory.StartNew(startgen);
         }
+
         private void timerOfficer_Tick(object sender, EventArgs e)
         {
-            timerOfficer.Stop();
             Action startgen = () =>
             {
                 commander.StartGeneration();
             };
             Task taskstartgen = Task.Factory.StartNew(startgen);
+            BeginInvoke((MethodInvoker)(() => timerOfficer.Stop()));
         }
 
         private void timerRcon_Tick(object sender, EventArgs e)
@@ -150,9 +151,9 @@ namespace Il_2.Commander
 
         private void timerLog_Tick(object sender, EventArgs e)
         {
-            if(busy)
+            if (busy)
             {
-                if(CommanderCL.qLog.Count > 0)
+                if (CommanderCL.qLog.Count > 0)
                 {
                     busy = false;
                     var str = CommanderCL.qLog.Dequeue();
@@ -168,6 +169,98 @@ namespace Il_2.Commander
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
             lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+
+        /// <summary>
+        /// Запускает предварительную генерацию миссии.
+        /// </summary>
+        /// <param name="predGen">pregen</param>
+        public void StartGeneration(string predGen)
+        {
+            var counter = lvLog.Items.Count;
+            ListViewItem lvi = new ListViewItem();
+            lvi.Text = "Start PredGen...";
+            lvi.ForeColor = Color.DarkRed;
+            if ((counter % 2) == 0)
+            {
+                lvi.BackColor = Color.WhiteSmoke;
+            }
+            else
+            {
+                lvi.BackColor = Color.LightGray;
+            }
+            BeginInvoke((MethodInvoker)(() => lvLog.Items.Add(lvi)));
+            BeginInvoke((MethodInvoker)(() => lvLog.Items[lvLog.Items.Count - 1].EnsureVisible()));
+            processGenerator = new Process();
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator, predGen);
+            processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
+            processStartInfo.RedirectStandardOutput = true; //Выводить в родительское окно
+            processStartInfo.UseShellExecute = false;
+            processStartInfo.CreateNoWindow = true; // не создавать окно CMD
+            processStartInfo.StandardOutputEncoding = Encoding.GetEncoding(866);
+            processGenerator.StartInfo = processStartInfo;
+            processGenerator.EnableRaisingEvents = true;
+            processGenerator.Exited += new EventHandler(PredGen_complete);
+            processGenerator.Start();
+        }
+        /// <summary>
+        /// Вызывается после завершения предварительной генерации миссии.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void PredGen_complete(object sender, EventArgs e)
+        {
+            string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
+            Commander_GetLogArray(content);
+            BeginInvoke((MethodInvoker)(() => btn_Stop.Enabled = false));
+            BeginInvoke((MethodInvoker)(() => btn_Start.Enabled = true));
+            BeginInvoke((MethodInvoker)(() => btn_StartGen.Enabled = true));
+            BeginInvoke((MethodInvoker)(() => btn_StartPredGen.Enabled = true));
+        }
+        /// <summary>
+        /// Старт генератора. Запускает полную генерацию миссии
+        /// </summary>
+        public void StartGeneration()
+        {
+            var counter = lvLog.Items.Count;
+            ListViewItem lvi = new ListViewItem();
+            lvi.Text = "Start Generation...";
+            lvi.ForeColor = Color.DarkRed;
+            if ((counter % 2) == 0)
+            {
+                lvi.BackColor = Color.WhiteSmoke;
+            }
+            else
+            {
+                lvi.BackColor = Color.LightGray;
+            }
+            BeginInvoke((MethodInvoker)(() => lvLog.Items.Add(lvi)));
+            BeginInvoke((MethodInvoker)(() => lvLog.Items[lvLog.Items.Count - 1].EnsureVisible()));
+            processGenerator = new Process();
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator);
+            processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
+            processStartInfo.RedirectStandardOutput = true; //Выводить в родительское окно
+            processStartInfo.UseShellExecute = false;
+            processStartInfo.CreateNoWindow = true; // не создавать окно CMD
+            processStartInfo.StandardOutputEncoding = Encoding.GetEncoding(866);
+            processGenerator.StartInfo = processStartInfo;
+            processGenerator.EnableRaisingEvents = true;
+            processGenerator.Exited += new EventHandler(Generation_complete);
+            processGenerator.Start();
+        }
+        /// <summary>
+        /// Вызывается после завершения генерации миссии
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Generation_complete(object sender, EventArgs e)
+        {
+            string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
+            Commander_GetLogArray(content);
+            BeginInvoke((MethodInvoker)(() => btn_Stop.Enabled = false));
+            BeginInvoke((MethodInvoker)(() => btn_Start.Enabled = true));
+            BeginInvoke((MethodInvoker)(() => btn_StartGen.Enabled = true));
+            BeginInvoke((MethodInvoker)(() => btn_StartPredGen.Enabled = true));
         }
     }
 }

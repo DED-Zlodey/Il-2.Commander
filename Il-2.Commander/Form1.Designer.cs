@@ -140,7 +140,7 @@
             // 
             // timerOfficer
             // 
-            this.timerOfficer.Interval = 300000;
+            this.timerOfficer.Interval = 10000;
             this.timerOfficer.Tick += new System.EventHandler(this.timerOfficer_Tick);
             // 
             // timerRcon
