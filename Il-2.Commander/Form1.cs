@@ -122,12 +122,12 @@ namespace Il_2.Commander
             btn_Start.Enabled = false;
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
-            //StartGeneration("pregen");
-            Action startgen = () =>
-            {
-                commander.TestGen();
-            };
-            Task taskstartgen = Task.Factory.StartNew(startgen);
+            StartGeneration("pregen");
+            //Action startgen = () =>
+            //{
+            //    commander.TestGen();
+            //};
+            //Task taskstartgen = Task.Factory.StartNew(startgen);
         }
 
         private void timerOfficer_Tick(object sender, EventArgs e)

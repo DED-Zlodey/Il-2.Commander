@@ -105,6 +105,9 @@ namespace Il_2.Commander.Commander
             messenger.SpecStart();
         }
 
+        /// <summary>
+        /// Основной метод программы. Отсюда ничанается старт всех действий.
+        /// </summary>
         public void Start()
         {
             ReSetInputs();
@@ -114,6 +117,9 @@ namespace Il_2.Commander.Commander
             messenger.SpecStart();
             StartServer();
         }
+        /// <summary>
+        /// Тестовый метод. Можно удалить даже. Он нахер не нужен.
+        /// </summary>
         public void TestGen()
         {
             StartGeneration("pregen");
@@ -475,18 +481,15 @@ namespace Il_2.Commander.Commander
         private void StartColumn(int coal)
         {
             ExpertDB db = new ExpertDB();
-            var bp = db.BattlePonts.Where(x => x.Coalition == coal).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
             var countActivCol = ActiveColumn.Where(x => x.Coalition == coal).ToList().Count;
-            if(countActivCol < 3)
+            if(countActivCol < 3 && allcolumn.Count > 0)
             {
-                bp.Sort();
                 int iter = 3 - countActivCol;
                 for(int i = 0; i < iter; i++)
                 {
-                    var allcolpoint = allcolumn.Where(x => x.NWH == bp[i].Coalition).ToList();
-                    int rindex = random.Next(0, allcolpoint.Count);
-                    var inputmess = allcolpoint[rindex].NameCol;
+                    int rindex = random.Next(0, allcolumn.Count);
+                    var inputmess = allcolumn[rindex].NameCol;
                     var ent = allcolumn.First(x => x.NameCol == inputmess);
                     ActiveColumn.Add(ent);
                     RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
@@ -787,7 +790,6 @@ namespace Il_2.Commander.Commander
                     RconCommands.Enqueue(sendall);
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
-                    SetEndMission(1);
                     StartGeneration("pregen"); // Старт генератора
                 }
             }
@@ -1145,6 +1147,7 @@ namespace Il_2.Commander.Commander
             GetLogArray(content);
             GetLogStr("Wait start generation...", Color.Black);
             GetOfficerTime("StartTimeOfficer", Color.Black);
+            SetEndMission(1);
         }
         /// <summary>
         /// Вызывается после завершения генерации миссии
