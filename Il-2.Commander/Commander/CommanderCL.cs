@@ -49,14 +49,6 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private DStrikeBlue currentBluePoint;
         /// <summary>
-        /// Тут хранятся цели для атаки красных (сами цели синие) красные атакуют, синие оброняют
-        /// </summary>
-        private List<Target> redTarget = new List<Target>();
-        /// <summary>
-        /// Тут хранятся цели для атаки синих (сами цели красные) синие атакуют, красные оброняют
-        /// </summary>
-        private List<Target> blueTarget = new List<Target>();
-        /// <summary>
         /// Очередь из лог-файлов
         /// </summary>
         public static Queue<List<string>> qLog = new Queue<List<string>>();
@@ -1310,14 +1302,6 @@ namespace Il_2.Commander.Commander
             {
                 blueQ.Clear();
             }
-            if (redTarget.Count > 0)
-            {
-                redTarget.Clear();
-            }
-            if (blueTarget.Count > 0)
-            {
-                blueTarget.Clear();
-            }
             if (qLog.Count > 0)
             {
                 qLog.Clear();
@@ -1345,6 +1329,10 @@ namespace Il_2.Commander.Commander
             if (onlinePlayers.Count > 0)
             {
                 onlinePlayers.Clear();
+            }
+            if(ActiveTargets.Count > 0)
+            {
+                ActiveTargets.Clear();
             }
         }
         /// <summary>
