@@ -539,9 +539,12 @@ namespace Il_2.Commander.Commander
                             double max = 0.1;
                             if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                             {
-                                isTarget = true;
-                                KillTargetObj(ActiveTargets[i]);
-                                break;
+                                if(ActiveTargets[i].InernalWeight > ActiveTargets[i].Destroed)
+                                {
+                                    isTarget = true;
+                                    KillTargetObj(ActiveTargets[i]);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -599,49 +602,53 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var ent = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
-            ActiveTargets.First(x => x.id == target.id).Destroed = target.Destroed + 1;
-            db.CompTarget.First(x => x.id == target.id).Destroed = target.Destroed + 1;
-            var countMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).ToList().Count;
-            var countDestroyedMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).Sum(x => x.Destroed);
-            var countDestroyed = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex).Sum(x => x.Destroed);
-            if(countMandatory <= countDestroyedMandatory)
+            var entON = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
+            if(entON.Enable == 1)
             {
-                if(target.TotalWeigth <= countDestroyed)
+                ActiveTargets.First(x => x.id == target.id).Destroed = target.Destroed + 1;
+                db.CompTarget.First(x => x.id == target.id).Destroed = target.Destroed + 1;
+                var countMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).ToList().Count;
+                var countDestroyedMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).Sum(x => x.Destroed);
+                var countDestroyed = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex).Sum(x => x.Destroed);
+                if (countMandatory <= countDestroyedMandatory)
                 {
-                    RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
-                    RconCommands.Enqueue(command);
-                    var color = Color.Black;
-                    var coalstr = string.Empty;
-                    if(ent.Coalition == 201)
+                    if (target.TotalWeigth <= countDestroyed)
                     {
-                        color = Color.DarkBlue;
-                        coalstr = "Allies destroyed ";
+                        RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                        RconCommands.Enqueue(command);
+                        var color = Color.Black;
+                        var coalstr = string.Empty;
+                        if (ent.Coalition == 201)
+                        {
+                            color = Color.DarkBlue;
+                            coalstr = "Allies destroyed ";
+                        }
+                        if (ent.Coalition == 101)
+                        {
+                            color = Color.DarkRed;
+                            coalstr = "Axis destroyed ";
+                        }
+                        var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                        GetLogStr(mess, color);
+                        db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                        RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                        RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                        RconCommands.Enqueue(sendall);
+                        RconCommands.Enqueue(sendred);
+                        RconCommands.Enqueue(sendblue);
                     }
-                    if(ent.Coalition == 101)
-                    {
-                        color = Color.DarkRed;
-                        coalstr = "Axis destroyed ";
-                    }
-                    var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
-                    GetLogStr(mess, color);
-                    db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
-                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                    RconCommands.Enqueue(sendall);
-                    RconCommands.Enqueue(sendred);
-                    RconCommands.Enqueue(sendblue);
                 }
-            }
-            db.SaveChanges();
-            var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
-            db.Dispose();
-            if (alltargets.Count == 0)
-            {
-                int invcoal = InvertedCoalition(ent.Coalition);
-                ChangeCoalitionPoint(ent.IndexPoint);
-                SetAttackPoint(invcoal);
-                EnableTargetsToCoalition(invcoal);
+                db.SaveChanges();
+                var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
+                db.Dispose();
+                if (alltargets.Count == 0)
+                {
+                    int invcoal = InvertedCoalition(ent.Coalition);
+                    ChangeCoalitionPoint(ent.IndexPoint);
+                    SetAttackPoint(invcoal);
+                    EnableTargetsToCoalition(invcoal);
+                }
             }
         }
         /// <summary>
@@ -1393,6 +1400,13 @@ namespace Il_2.Commander.Commander
                             Coalition = onlinePlayers[i].Coalition
                         });
                     }
+                }
+            }
+            foreach(var item in dbonline)
+            {
+                if(!onlinePlayers.Exists(x => x.PlayerId == item.PlayerId))
+                {
+                    db.OnlinePilots.Remove(item);
                 }
             }
             db.SaveChanges();
