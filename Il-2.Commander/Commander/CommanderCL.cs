@@ -346,7 +346,6 @@ namespace Il_2.Commander.Commander
                     EnableTargetsToCoalition(201);
                     EnableTargetsToCoalition(101);
                     EnableWareHouse();
-                    //EnableRecon();
                 }
                 ReadLogFile(pathLog);
             }
@@ -1242,7 +1241,7 @@ namespace Il_2.Commander.Commander
             {
                 GetLogArray(content);
                 GetLogStr("Restart Mission...", Color.Black);
-                GetNameNextMission(1);
+                NameMission = GetNameNextMission(1);
                 ReWriteSDS(SetApp.Config.DirSDS);
                 NextMission(SetApp.Config.DirSDS);
             }
