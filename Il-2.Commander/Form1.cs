@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -251,12 +252,48 @@ namespace Il_2.Commander
         /// <param name="e"></param>
         private void Generation_complete(object sender, EventArgs e)
         {
+            bool Loading = false;
+            bool PrepareLoc = false;
+            bool SavingLoc = false;
+            bool SavingList = false;
+            bool SavingBin = false;
             string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
-            Commander_GetLogArray(content);
-            BeginInvoke((MethodInvoker)(() => btn_Stop.Enabled = false));
-            BeginInvoke((MethodInvoker)(() => btn_Start.Enabled = true));
-            BeginInvoke((MethodInvoker)(() => btn_StartGen.Enabled = true));
-            BeginInvoke((MethodInvoker)(() => btn_StartPredGen.Enabled = true));
+            foreach (var item in content)
+            {
+                if (item.Contains("Loading ") && item.Contains(" DONE"))
+                {
+                    Loading = true;
+                }
+                if (item.Contains("Prepare localisation data DONE"))
+                {
+                    PrepareLoc = true;
+                }
+                if (item.Contains("Saving localisation data DONE"))
+                {
+                    SavingLoc = true;
+                }
+                if (item.Contains("Saving binary data DONE"))
+                {
+                    SavingBin = true;
+                }
+                if (item.Contains("Saving .list DONE"))
+                {
+                    SavingList = true;
+                }
+            }
+            if (Loading && PrepareLoc && SavingBin && SavingList && SavingLoc)
+            {
+                Commander_GetLogArray(content);
+                BeginInvoke((MethodInvoker)(() => btn_Stop.Enabled = false));
+                BeginInvoke((MethodInvoker)(() => btn_Start.Enabled = true));
+                BeginInvoke((MethodInvoker)(() => btn_StartGen.Enabled = true));
+                BeginInvoke((MethodInvoker)(() => btn_StartPredGen.Enabled = true));
+            }
+            else
+            {
+                Commander_GetLogStr("Generation error. Restart generation. Please wait...", Color.Red);
+                StartGeneration();
+            }
         }
     }
 }

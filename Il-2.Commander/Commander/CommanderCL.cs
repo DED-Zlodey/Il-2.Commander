@@ -1216,12 +1216,48 @@ namespace Il_2.Commander.Commander
         /// <param name="e"></param>
         private void Generation_complete(object sender, EventArgs e)
         {
+            bool Loading = false;
+            bool PrepareLoc = false;
+            bool SavingLoc = false;
+            bool SavingList = false;
+            bool SavingBin = false;
             string[] content = processGenerator.StandardOutput.ReadToEnd().Split('\r');
-            GetLogArray(content);
-            GetLogStr("Restart Mission...", Color.Black);
-            GetNameNextMission(1);
-            ReWriteSDS(SetApp.Config.DirSDS);
-            NextMission(SetApp.Config.DirSDS);
+            foreach(var item in content)
+            {
+                if(item.Contains("Loading ") && item.Contains(" DONE"))
+                {
+                    Loading = true;
+                }
+                if(item.Contains("Prepare localisation data DONE"))
+                {
+                    PrepareLoc = true;
+                }
+                if(item.Contains("Saving localisation data DONE"))
+                {
+                    SavingLoc = true;
+                }
+                if(item.Contains("Saving binary data DONE"))
+                {
+                    SavingBin = true;
+                }
+                if(item.Contains("Saving .list DONE"))
+                {
+                    SavingList = true;
+                }
+            }
+            if(Loading && PrepareLoc && SavingBin && SavingList && SavingLoc)
+            {
+                GetLogArray(content);
+                GetLogStr("Restart Mission...", Color.Black);
+                GetNameNextMission(1);
+                ReWriteSDS(SetApp.Config.DirSDS);
+                NextMission(SetApp.Config.DirSDS);
+            }
+            else
+            {
+                GetLogStr("Generation error. Restart generation. Please wait...", Color.Red);
+                StartGeneration();
+            }
         }
         /// <summary>
         /// Запуск следующей миссии через ркон команду
