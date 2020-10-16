@@ -1199,6 +1199,7 @@ namespace Il_2.Commander.Commander
             GetLogArray(content);
             GetLogStr("Wait start generation...", Color.Black);
             GetOfficerTime("StartTimeOfficer", Color.Black);
+            messenger.SpecSend("FrontLine");
             SetEndMission(1);
         }
         /// <summary>
