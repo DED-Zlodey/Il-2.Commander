@@ -96,6 +96,7 @@ namespace Il_2.Commander
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
             timerRcon.Start();
+            timerLog.Start();
             Action startgen = () =>
             {
                 commander.Start();
@@ -123,11 +124,6 @@ namespace Il_2.Commander
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
             StartGeneration("pregen");
-            //Action startgen = () =>
-            //{
-            //    commander.TestGen();
-            //};
-            //Task taskstartgen = Task.Factory.StartNew(startgen);
         }
 
         private void timerOfficer_Tick(object sender, EventArgs e)

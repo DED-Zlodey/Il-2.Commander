@@ -30,12 +30,13 @@ namespace Il_2.Commander.Commander
         {
             string response = connection.ExecuteCommand(cmd);
             string[] arr = { response, "" };
-
             if (response.Contains('&'))
             {
                 arr = response.Split('&');
             }
-            lastCommandStatus = (StatusCode)int.Parse(arr[0].Substring(7));
+            int lcom = 0;
+            int.TryParse(arr[0].Substring(7), out lcom);
+            lastCommandStatus = (StatusCode)lcom;
             lastCommandResult = Uri.UnescapeDataString(arr[1]);
 
         }

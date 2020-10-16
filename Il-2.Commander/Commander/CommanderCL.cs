@@ -84,6 +84,10 @@ namespace Il_2.Commander.Commander
         /// Отложенная отправка сообщений в чат. Имитируется задержка связи. О нападении сообщается не сразу.
         /// </summary>
         private List<DeferredCommand> deferredCommands = new List<DeferredCommand>();
+        /// <summary>
+        /// Состояние складов
+        /// </summary>
+        private List<BattlePonts> battlePonts = new List<BattlePonts>();
         private string LastFile { get; set; }
         private string NameMission = string.Empty;
         private bool TriggerTime = true;
@@ -116,13 +120,6 @@ namespace Il_2.Commander.Commander
             messenger = new HubMessenger();
             messenger.SpecStart();
             StartServer();
-        }
-        /// <summary>
-        /// Тестовый метод. Можно удалить даже. Он нахер не нужен.
-        /// </summary>
-        public void TestGen()
-        {
-            StartGeneration("pregen");
         }
         /// <summary>
         /// Отправка Ркон комманд из очереди
@@ -345,6 +342,7 @@ namespace Il_2.Commander.Commander
                     Form1.busy = true;
                     TriggerTime = true;
                     messDurTime = DateTime.Now;
+                    SetStateWH();
                     ClearPrevMission();
                     dt = DateTime.Now;
                     GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
@@ -356,7 +354,7 @@ namespace Il_2.Commander.Commander
                     EnableTargetsToCoalition(201);
                     EnableTargetsToCoalition(101);
                     EnableWareHouse();
-                    EnableRecon();
+                    //EnableRecon();
                 }
                 ReadLogFile(pathLog);
             }
@@ -475,12 +473,25 @@ namespace Il_2.Commander.Commander
             }
         }
         /// <summary>
+        /// Инициализация состояния складов
+        /// </summary>
+        private void SetStateWH()
+        {
+            battlePonts.Clear();
+            ExpertDB db = new ExpertDB();
+            var bpl = db.BattlePonts.ToList();
+            battlePonts.AddRange(bpl);
+            db.Dispose();
+        }
+        /// <summary>
         /// Старт колонн
         /// </summary>
         /// <param name="coal">номер коалиции</param>
         private void StartColumn(int coal)
         {
             ExpertDB db = new ExpertDB();
+            var bp = battlePonts.Where(x => x.Coalition == coal).ToList();
+            bp.Sort();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
             var countActivCol = ActiveColumn.Where(x => x.Coalition == coal).ToList().Count;
             if(countActivCol < 3 && allcolumn.Count > 0)
@@ -488,9 +499,11 @@ namespace Il_2.Commander.Commander
                 int iter = 3 - countActivCol;
                 for(int i = 0; i < iter; i++)
                 {
-                    int rindex = random.Next(0, allcolumn.Count);
-                    var inputmess = allcolumn[rindex].NameCol;
-                    var ent = allcolumn.First(x => x.NameCol == inputmess);
+                    var allwhcol = allcolumn.Where(x => x.NWH == bp[i].WHID && x.Coalition == bp[i].Coalition).ToList();
+                    int rindex = random.Next(0, allwhcol.Count);
+                    var inputmess = allwhcol[rindex].NameCol;
+                    var ent = allwhcol[rindex];
+                    ent.Active = true;
                     ActiveColumn.Add(ent);
                     RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
                     RconCommands.Enqueue(command);
@@ -591,9 +604,9 @@ namespace Il_2.Commander.Commander
             var countMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).ToList().Count;
             var countDestroyedMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).Sum(x => x.Destroed);
             var countDestroyed = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex).Sum(x => x.Destroed);
-            if(countMandatory >= countDestroyedMandatory)
+            if(countMandatory <= countDestroyedMandatory)
             {
-                if(target.TotalWeigth >= countDestroyed)
+                if(target.TotalWeigth <= countDestroyed)
                 {
                     RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
                     RconCommands.Enqueue(command);
@@ -720,7 +733,7 @@ namespace Il_2.Commander.Commander
         private void DisableColumn(AType8 aType)
         {
             ExpertDB db = new ExpertDB();
-            var mobj = db.MissionObj.ToList();
+            var mobj = db.MissionObj.Where(x => x.TaskType == 15).ToList();
             foreach(var item in mobj)
             {
                 var Xres = aType.XPos - item.XPos;
@@ -729,19 +742,59 @@ namespace Il_2.Commander.Commander
                 double max = 0.1;
                 if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                 {
-                    var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
-                    var allArrivalCol = ent.ArrivalCol + 1;
-                    var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
-                    string namecol = ent.NameCol;
-                    db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = allArrivalUnits;
-                    db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
-                    db.ColInput.First(x => x.NameCol == namecol).Active = false;
-                    var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
-                    GetLogStr(mess, Color.DarkRed);
-                    ActiveColumn.Remove(ent);
+                    if(ActiveColumn.Exists(x => x.NameCol == item.NameObjective))
+                    {
+                        var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
+                        var allArrivalCol = ent.ArrivalCol + 1;
+                        var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
+                        string namecol = ent.NameCol;
+                        db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = allArrivalUnits;
+                        db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
+                        db.ColInput.First(x => x.NameCol == namecol).Active = false;
+                        var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
+                        GetLogStr(mess, Color.DarkRed);
+                        ActiveColumn.Remove(ent);
+                        RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
+                    }
                 }
             }
+            db.SaveChanges();
             db.Dispose();
+        }
+        private void RestoreWareHouseInMemory(int numtarget, int coal, ExpertDB db)
+        {
+            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
+            var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
+            var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
+            var arrivalBP = 0;
+            if (columns.Count > 0)
+            {
+                foreach (var item in columns)
+                {
+                    arrivalBP += item.ArrivalUnit * 5;
+                }
+                if (arrivalBP < damage.Count)
+                {
+                    for (int i = 0; i < arrivalBP; i++)
+                    {
+                        int rindex = random.Next(0, damage.Count);
+                        var ent = damage[rindex];
+                    }
+                }
+                else
+                {
+                    foreach (var item in damage)
+                    {
+                        arrivalBP--;
+                    }
+                    var finalBP = bp.Point + arrivalBP;
+                    if (finalBP > SetApp.Config.BattlePoints)
+                    {
+                        finalBP = SetApp.Config.BattlePoints;
+                    }
+                    battlePonts.First(x => x.Coalition == coal && x.WHID == numtarget).Point = finalBP;
+                }
+            }
         }
         /// <summary>
         /// Чтение лог-файла, постановка его в очередь на обработку
@@ -836,11 +889,11 @@ namespace Il_2.Commander.Commander
         /// <param name="coal">Принимает номер коалиции для которой требуется установить текущую точку атаки</param>
         private void SetAttackPoint(int coal)
         {
-            if (coal == 201)
+            if (coal == 201 && blueQ.Count > 0)
             {
                 currentBluePoint = blueQ.Dequeue();
             }
-            if (coal == 101)
+            if (coal == 101 && redQ.Count > 0)
             {
                 currentRedPoint = redQ.Dequeue();
             }

@@ -74,5 +74,10 @@ namespace Il_2.Commander
         /// </summary>
         [JsonProperty("GeneratorWorkingDirectory")]
         public string GeneratorWorkingDirectory { get; private set; }
+        /// <summary>
+        /// Максимальная вместимость одного полевого склада
+        /// </summary>
+        [JsonProperty("BattlePoints")]
+        public int BattlePoints { get; private set; }
     }
 }
