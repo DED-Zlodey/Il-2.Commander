@@ -80,7 +80,14 @@ namespace Il_2.Commander.Commander
         /// Состояние складов
         /// </summary>
         private List<BattlePonts> battlePonts = new List<BattlePonts>();
+        private List<Victory> victories = new List<Victory>();
+        /// <summary>
+        /// крайний лог-файл
+        /// </summary>
         private string LastFile { get; set; }
+        /// <summary>
+        /// Имя текущей миссии.
+        /// </summary>
         private string NameMission = string.Empty;
         private bool TriggerTime = true;
         private DateTime dt = DateTime.Now;
@@ -419,7 +426,7 @@ namespace Il_2.Commander.Commander
                         var ent = pilotsList.First(x => x.PLID == aType.PID);
                         if (ent.TYPE.Contains("Ju 52 3mg4e"))
                         {
-                            EnableRecon(aType, ent);
+                            //EnableRecon(aType, ent);
                         }
                     }
                 }
@@ -841,6 +848,7 @@ namespace Il_2.Commander.Commander
                     RconCommands.Enqueue(sendall);
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
+                    CreateVictoryCoalition();
                     StartGeneration("pregen"); // Старт генератора
                 }
             }
@@ -1030,6 +1038,8 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var ent = db.GraphCity.First(x => x.IndexCity == city);
+            var victoryCoal = InvertedCoalition(ent.Coalitions);
+            victories.Add(new Victory(ent, victoryCoal));
             var afields = db.AirFields.Where(x => x.IndexCity == city).ToList();
             db.GraphCity.First(x => x.IndexCity == city).Coalitions = InvertedCoalition(ent.Coalitions);
             var array = ent.Targets.Split(',');
@@ -1104,7 +1114,6 @@ namespace Il_2.Commander.Commander
             {
                 RconCommand onfield = new RconCommand(Rcontype.Input, item.Name);
                 RconCommands.Enqueue(onfield);
-                //GetLogStr(item.Name, Color.Black);
             }
             db.Dispose();
         }
@@ -1200,6 +1209,35 @@ namespace Il_2.Commander.Commander
             GetOfficerTime("StartTimeOfficer", Color.Black);
             messenger.SpecSend("FrontLine");
             SetEndMission(1);
+        }
+        /// <summary>
+        /// Выявляет победителя текущей миссии
+        /// </summary>
+        private void CreateVictoryCoalition()
+        {
+            var counrVicRed = victories.Where(x => x.Coalition == 101).ToList().Count;
+            var counrVicBlue = victories.Where(x => x.Coalition == 201).ToList().Count;
+            foreach(var item in victories)
+            {
+                var mess = "-=COMMANDER=- " + GetNameCoalition(item.Coalition) + " captured the locality of " + item.NameCity;
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                GetLogStr(mess, Color.Red);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+            }
+            if(counrVicBlue > counrVicRed)
+            {
+                RconCommand command = new RconCommand(Rcontype.Input, "Victory201");
+                RconCommands.Enqueue(command);
+            }
+            if (counrVicBlue < counrVicRed)
+            {
+                RconCommand command = new RconCommand(Rcontype.Input, "Victory101");
+                RconCommands.Enqueue(command);
+            }
         }
         /// <summary>
         /// Вызывается после завершения генерации миссии
@@ -1546,6 +1584,11 @@ namespace Il_2.Commander.Commander
                     return string.Empty;
             }
         }
+        /// <summary>
+        /// Получает номер коалиции и возвращает название коалиции в формате строки.
+        /// </summary>
+        /// <param name="coal">Номер коалиции</param>
+        /// <returns></returns>
         private string GetNameCoalition(int coal)
         {
             if(coal == 101)
