@@ -373,6 +373,10 @@ namespace Il_2.Commander.Commander
                         onlinePlayers.First(x => x.PlayerId == aType.LOGIN).IngameStatus = GameStatusPilot.Parking.ToString();
                         onlinePlayers.First(x => x.PlayerId == aType.LOGIN).Coalition = aType.COUNTRY;
                     }
+                    else
+                    {
+                        //onlinePlayers.Add(new Player { })
+                    }
                 }
                 if (str[i].Contains("AType:16 "))
                 {
@@ -1208,7 +1212,7 @@ namespace Il_2.Commander.Commander
             {
                 foreach(var item in SupplyPoint)
                 {
-                    db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = item.PointsKotel + 0.5;
+                    db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = item.PointsKotel + 0.35;
                     if (pilot.Player != null)
                     {
                         var mess = "-=COMMANDER=- " + pilot.NAME + " you have successfully delivered the cargo to the locality.";
@@ -1474,6 +1478,15 @@ namespace Il_2.Commander.Commander
                     if (!players.Exists(x => x.PlayerId == onlinePlayers[i].PlayerId))
                     {
                         deleteplayers.Add(onlinePlayers[i]);
+                    }
+                    if(pilotsList.Exists(x => x.LOGIN == onlinePlayers[i].PlayerId) && !deleteplayers.Exists(x => x.PlayerId == onlinePlayers[i].PlayerId))
+                    {
+                        var pilot = pilotsList.FirstOrDefault(x => x.LOGIN == onlinePlayers[i].PlayerId);
+                        if(pilot != null)
+                        {
+                            onlinePlayers[i].Coalition = pilot.COUNTRY;
+                            onlinePlayers[i].IngameStatus = pilot.GameStatus;
+                        }
                     }
                 }
                 for (int i = 0; i < deleteplayers.Count; i++)
