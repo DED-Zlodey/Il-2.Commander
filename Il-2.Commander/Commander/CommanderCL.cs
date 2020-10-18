@@ -531,8 +531,8 @@ namespace Il_2.Commander.Commander
                     {
                         if(ActiveTargets[i].GroupInput != 8 && ActiveTargets[i].Enable == true)
                         {
-                            var Xres = ActiveTargets[i].XPos - item.XPos;
-                            var Zres = ActiveTargets[i].ZPos - item.ZPos;
+                            var Xres = item.XPos - ActiveTargets[i].XPos;
+                            var Zres = item.ZPos - ActiveTargets[i].ZPos;
                             double min = -0.1;
                             double max = 0.1;
                             if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
@@ -540,8 +540,8 @@ namespace Il_2.Commander.Commander
                                 if(ActiveTargets[i].InernalWeight > ActiveTargets[i].Destroed)
                                 {
                                     isTarget = true;
-                                    KillTargetObj(ActiveTargets[i]);
-                                    break;
+                                    KillTargetObj(ActiveTargets[i], item);
+                                    //break;
                                 }
                             }
                         }
@@ -571,8 +571,7 @@ namespace Il_2.Commander.Commander
                     {
                         continue;
                     }
-                }
-                
+                }           
             }
         }
         private void CheckDisableTarget(AType3 aType)
@@ -596,15 +595,18 @@ namespace Il_2.Commander.Commander
         /// Уничтожение объекта внутри цели. А так же проверка уничтожена ли цель целиком. Если уничтожена цель выключается.
         /// </summary>
         /// <param name="target">Объект цели</param>
-        private void KillTargetObj(CompTarget target)
+        private void KillTargetObj(CompTarget target, AType3 aType)
         {
             ExpertDB db = new ExpertDB();
             var ent = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
             var entON = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
             if(entON.Enable == 1)
             {
-                ActiveTargets.First(x => x.id == target.id).Destroed = target.Destroed + 1;
-                db.CompTarget.First(x => x.id == target.id).Destroed = target.Destroed + 1;
+                if (target.InernalWeight > target.Destroed)
+                {
+                    ActiveTargets.First(x => x.ZPos == target.ZPos && x.XPos == target.XPos).Destroed = target.Destroed + 1;
+                    db.CompTarget.First(x => x.ZPos == target.ZPos && x.XPos == target.XPos).Destroed = target.Destroed + 1;
+                }
                 var countMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).ToList().Count;
                 var countDestroyedMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).Sum(x => x.Destroed);
                 var countDestroyed = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex).Sum(x => x.Destroed);
@@ -647,6 +649,27 @@ namespace Il_2.Commander.Commander
                     SetAttackPoint(invcoal);
                     EnableTargetsToCoalition(invcoal);
                 }
+            }
+            else if(entON.Enable == 0)
+            {
+                // тут надо писать в чат о кривом ударе по цели
+                var pilot = pilotsList.FirstOrDefault(x => x.PLID == aType.AID);
+                if(pilot != null)
+                {
+                    var mess = "-=COMMANDER=-: Attention " + pilot.NAME + "! You are attacking a target that is forbidden to attack!";
+                    GetLogStr(mess, Color.DarkOrange);
+                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                    RconCommands.Enqueue(sendall);
+                    RconCommands.Enqueue(sendred);
+                    RconCommands.Enqueue(sendblue);
+                }
+                db.Dispose();
+            }
+            else
+            {
+                db.Dispose();
             }
         }
         /// <summary>
