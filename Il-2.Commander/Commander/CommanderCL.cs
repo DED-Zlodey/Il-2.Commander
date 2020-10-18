@@ -373,10 +373,6 @@ namespace Il_2.Commander.Commander
                         onlinePlayers.First(x => x.PlayerId == aType.LOGIN).IngameStatus = GameStatusPilot.Parking.ToString();
                         onlinePlayers.First(x => x.PlayerId == aType.LOGIN).Coalition = aType.COUNTRY;
                     }
-                    else
-                    {
-                        //onlinePlayers.Add(new Player { })
-                    }
                 }
                 if (str[i].Contains("AType:16 "))
                 {
@@ -572,9 +568,14 @@ namespace Il_2.Commander.Commander
                     {
                         continue;
                     }
+                    CheckDisableTarget(item);
                 }
             }
         }
+        /// <summary>
+        /// Проверка атаки неактивной цели
+        /// </summary>
+        /// <param name="aType">Событие kill</param>
         private void CheckDisableTarget(AType3 aType)
         {
             ExpertDB db = new ExpertDB();
@@ -587,7 +588,22 @@ namespace Il_2.Commander.Commander
                 double max = 0.1;
                 if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                 {
-
+                    var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
+                    if(ent.Enable == 0)
+                    {
+                        var pilot = pilotsList.FirstOrDefault(x => x.PLID == aType.AID || x.PID == aType.AID);
+                        if (pilot != null)
+                        {
+                            var mess = "-=COMMANDER=-: Attention " + pilot.NAME + "! You are attacking a target that is forbidden to attack!";
+                            GetLogStr(mess, Color.DarkOrange);
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                            RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                            RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                            RconCommands.Enqueue(sendall);
+                            RconCommands.Enqueue(sendred);
+                            RconCommands.Enqueue(sendblue);
+                        }
+                    }
                 }
             }
             db.Dispose();
@@ -654,23 +670,6 @@ namespace Il_2.Commander.Commander
                         EnableTargetsToCoalition(invcoal);
                     }
                 }
-            }
-            else if (entON.Enable == 0)
-            {
-                // тут надо писать в чат о кривом ударе по цели
-                var pilot = pilotsList.FirstOrDefault(x => x.PLID == aType.AID || x.PID == aType.AID);
-                if (pilot != null)
-                {
-                    var mess = "-=COMMANDER=-: Attention " + pilot.NAME + "! You are attacking a target that is forbidden to attack!";
-                    GetLogStr(mess, Color.DarkOrange);
-                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                    RconCommands.Enqueue(sendall);
-                    RconCommands.Enqueue(sendred);
-                    RconCommands.Enqueue(sendblue);
-                }
-                db.Dispose();
             }
             else
             {
@@ -1437,6 +1436,10 @@ namespace Il_2.Commander.Commander
             if (ActiveTargets.Count > 0)
             {
                 ActiveTargets.Clear();
+            }
+            if(victories.Count > 0)
+            {
+                victories.Clear();
             }
         }
         /// <summary>
