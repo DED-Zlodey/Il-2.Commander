@@ -427,7 +427,7 @@ namespace Il_2.Commander.Commander
                         var ent = pilotsList.First(x => x.PLID == aType.PID);
                         if (ent.TYPE.Contains("Ju 52 3mg4e"))
                         {
-                            //EnableRecon(aType, ent);
+                            SupplyCauldron(aType, ent);
                         }
                     }
                 }
@@ -1181,6 +1181,44 @@ namespace Il_2.Commander.Commander
                 db.ServerInputs.First(x => x.Name.Equals(ereconname)).Enable = 1;
             }
             db.SaveChanges();
+            db.Dispose();
+        }
+        /// <summary>
+        /// Снабжение котлов
+        /// </summary>
+        /// <param name="type6">Событие посадки</param>
+        /// <param name="pilot">Пилот</param>
+        private void SupplyCauldron(AType6 type6, AType10 pilot)
+        {
+            ExpertDB db = new ExpertDB();
+            List<GraphCity> SupplyPoint = new List<GraphCity>();
+            var citys = db.GraphCity.Where(x => x.Kotel && x.Coalitions == pilot.COUNTRY).ToList();
+            foreach(var item in citys)
+            {
+                if(!item.Name_en.Equals("Outside"))
+                {
+                    var dist = SetApp.GetDistance(type6.ZPos, type6.XPos, item.ZPos, item.XPos);
+                    if (dist <= 2500)
+                    {
+                        SupplyPoint.Add(item);
+                    }
+                }
+            }
+            if(SupplyPoint.Count > 0)
+            {
+                foreach(var item in SupplyPoint)
+                {
+                    db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = item.PointsKotel + 0.5;
+                    if (pilot.Player != null)
+                    {
+                        var mess = "-=COMMANDER=- " + pilot.NAME + " you have successfully delivered the cargo to the locality.";
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, pilot.Player.Cid);
+                        GetLogStr(mess, Color.Red);
+                        RconCommands.Enqueue(sendall);
+                    }
+                }
+                db.SaveChanges();
+            }
             db.Dispose();
         }
         /// <summary>
