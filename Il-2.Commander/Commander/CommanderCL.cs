@@ -803,7 +803,20 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    arrivalBP += item.ArrivalUnit * 5;
+                    int koef = 5;
+                    if (item.TypeCol == (int)TypeColumn.Armour)
+                    {
+                        koef = 8;
+                    }
+                    if (item.TypeCol == (int)TypeColumn.Mixed)
+                    {
+                        koef = 6;
+                    }
+                    if (item.TypeCol == (int)TypeColumn.Transport)
+                    {
+                        koef = 5;
+                    }
+                    arrivalBP += item.ArrivalUnit * koef;
                 }
                 if (arrivalBP < damage.Count)
                 {
@@ -1524,7 +1537,7 @@ namespace Il_2.Commander.Commander
                         }
                         if (dbonline.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Coalition != onlinePlayers[i].Coalition)
                         {
-                            db.OnlinePilots.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Cid = onlinePlayers[i].Cid;
+                            db.OnlinePilots.First(x => x.PlayerId == onlinePlayers[i].PlayerId).Coalition = onlinePlayers[i].Coalition;
                         }
                     }
                     else
@@ -1694,5 +1707,11 @@ namespace Il_2.Commander.Commander
                 return 201;
             }
         }
+    }
+    enum TypeColumn
+    {
+        Armour = 1,
+        Mixed = 2,
+        Transport = 3
     }
 }
