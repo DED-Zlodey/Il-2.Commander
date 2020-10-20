@@ -604,6 +604,7 @@ namespace Il_2.Commander.Commander
                     }
                     if (isTarget)
                     {
+                        reviewMapTarget = true;
                         continue;
                     }
                     for (int i = 0; i < Bridges.Count; i++)
