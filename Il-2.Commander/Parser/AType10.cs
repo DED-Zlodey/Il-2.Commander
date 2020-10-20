@@ -32,6 +32,7 @@ namespace Il_2.Commander.Parser
         public int WM { get; private set; }
         public string GameStatus { get; set; }
         public Player Player { get; set; }
+        public double Cargo { get; set; } = 0;
 
         #region Регулярки
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
