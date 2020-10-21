@@ -789,7 +789,12 @@ namespace Il_2.Commander.Commander
             var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol) && x.Destroyed).ToList();
             if(ent.Unit <= column12Dead.Count)
             {
-
+                if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
+                {
+                    var pilot = pilotsList.First(x => x.PLID == aType.AID || x.PID == aType.AID);
+                    var mess = "Pilot: " + pilot.NAME + " Coalition: " + pilot.COUNTRY + " Destroyed: " + ent.TYPE;
+                    GetLogStr(mess, Color.DarkViolet);
+                }
             }
             if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
             {
@@ -855,7 +860,7 @@ namespace Il_2.Commander.Commander
                         var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
                         var column12 = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol)).ToList();
                         var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol) && x.Destroyed).ToList();
-                        var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination dead unit: " + column12Dead.Count;
+                        var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination. Destroyed unit: " + column12Dead.Count;
                         GetLogStr(altmess, Color.DarkViolet);
                         var allArrivalCol = ent.ArrivalCol + 1;
                         var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
