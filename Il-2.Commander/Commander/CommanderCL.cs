@@ -780,13 +780,20 @@ namespace Il_2.Commander.Commander
         /// <param name="aType">Объект AType:3</param>
         private void KillUnitColumn(AType3 aType)
         {
-            var ent = ColumnAType12.First(x => x.ID == aType.TID);
+            var ent = ColumnAType12.First(x => x.ID == aType.TID && !x.Destroyed);
             var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
             column.DestroyedUnits = column.DestroyedUnits + 1;
             ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
-            if (pilotsList.Exists(x => x.PLID == aType.AID))
+            ColumnAType12.First(x => x.ID == aType.TID && !x.Destroyed).Destroyed = true;
+            var column12 = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol)).ToList();
+            var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol) && x.Destroyed).ToList();
+            if(ent.Unit <= column12Dead.Count)
             {
-                var pilot = pilotsList.First(x => x.PLID == aType.AID);
+
+            }
+            if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
+            {
+                var pilot = pilotsList.First(x => x.PLID == aType.AID || x.PID == aType.AID);
                 var mess = "Pilot: " + pilot.NAME + " Coalition: " + pilot.COUNTRY + " Destroyed: " + ent.TYPE;
                 GetLogStr(mess, Color.DarkGreen);
             }
@@ -846,6 +853,10 @@ namespace Il_2.Commander.Commander
                     if (ActiveColumn.Exists(x => x.NameCol == item.NameObjective))
                     {
                         var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
+                        var column12 = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol)).ToList();
+                        var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol) && x.Destroyed).ToList();
+                        var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination dead unit: " + column12Dead.Count;
+                        GetLogStr(altmess, Color.DarkViolet);
                         var allArrivalCol = ent.ArrivalCol + 1;
                         var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
                         string namecol = ent.NameCol;
