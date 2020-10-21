@@ -189,23 +189,23 @@ namespace Il_2.Commander.Commander
                 }
                 qrcon = true;
             }
-            if(airSupplies.Count > 0)
+            if (airSupplies.Count > 0)
             {
                 qrcon = false;
                 var localdt = DateTime.Now;
                 List<HandlingAirSupply> deletes = new List<HandlingAirSupply>();
-                foreach(var item in airSupplies)
+                foreach (var item in airSupplies)
                 {
                     var elapsed = localdt - item.CreateTime;
                     if (elapsed.TotalSeconds >= item.Duration)
                     {
-                        if(item.TypeSupply == TypeSupply.ForCity)
+                        if (item.TypeSupply == TypeSupply.ForCity)
                         {
                             ExpertDB db = new ExpertDB();
-                            if(pilotsList.Exists(x => x.LOGIN == item.Pilot.LOGIN))
+                            if (pilotsList.Exists(x => x.LOGIN == item.Pilot.LOGIN))
                             {
                                 var ent = db.GraphCity.FirstOrDefault(x => x.IndexCity == item.IndexCity);
-                                if(ent != null)
+                                if (ent != null)
                                 {
                                     db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = ent.PointsKotel + item.Pilot.Cargo;
                                     RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, item.Pilot.Player.Cid);
@@ -229,7 +229,7 @@ namespace Il_2.Commander.Commander
                         }
                     }
                 }
-                foreach(var item in deletes)
+                foreach (var item in deletes)
                 {
                     airSupplies.Remove(item);
                 }
@@ -465,7 +465,7 @@ namespace Il_2.Commander.Commander
                             onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
                         }
                     }
-                    if(airSupplies.Exists(x => x.Pilot.PLID == aType.PID))
+                    if (airSupplies.Exists(x => x.Pilot.PLID == aType.PID))
                     {
                         var ent = airSupplies.First(x => x.Pilot.PLID == aType.PID);
                         airSupplies.Remove(ent);
@@ -495,6 +495,10 @@ namespace Il_2.Commander.Commander
                     if (aType.ICTYPE == -1 && aType.TYPE == 15)
                     {
                         DisableColumn(aType);
+                    }
+                    if (aType.ICTYPE == -1 && aType.TYPE == 13)
+                    {
+                        DisableColumnBridge(aType);
                     }
                     var mess = "Objective: " + aType.OBJID.ToString() + " TYPE:" + aType.TYPE + " ICTYPE:" + aType.ICTYPE;
                     GetLogStr(mess, Color.DarkGreen);
@@ -554,7 +558,7 @@ namespace Il_2.Commander.Commander
                 for (int i = 0; i < iter; i++)
                 {
                     var allwhcol = allcolumn.Where(x => x.NWH == bp[i].WHID && x.Coalition == bp[i].Coalition).ToList();
-                    if(allwhcol.Count > 0)
+                    if (allwhcol.Count > 0)
                     {
                         int rindex = random.Next(0, allwhcol.Count);
                         var inputmess = allwhcol[rindex].NameCol;
@@ -632,9 +636,9 @@ namespace Il_2.Commander.Commander
                     CheckDisableTarget(item);
                 }
             }
-            if(reviewMapTarget)
+            if (reviewMapTarget)
             {
-                if(messenger != null)
+                if (messenger != null)
                 {
                     messenger.SpecSend("Targets");
                 }
@@ -787,7 +791,7 @@ namespace Il_2.Commander.Commander
             ColumnAType12.First(x => x.ID == aType.TID && !x.Destroyed).Destroyed = true;
             var column12 = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol)).ToList();
             var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol) && x.Destroyed).ToList();
-            if(ent.Unit <= column12Dead.Count)
+            if (ent.Unit <= column12Dead.Count)
             {
                 if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
                 {
@@ -839,6 +843,42 @@ namespace Il_2.Commander.Commander
             RestoreWareHouseInMemory(column.NWH, column.Coalition);
             ActiveColumn.Remove(column);
         }
+        private void DisableColumnBridge(AType8 aType)
+        {
+            ExpertDB db = new ExpertDB();
+            var mobj = db.MissionObj.Where(x => x.TaskType == 13).ToList();
+            foreach (var item in mobj)
+            {
+                var Xres = aType.XPos - item.XPos;
+                var Zres = aType.ZPos - item.ZPos;
+                double min = -0.1;
+                double max = 0.1;
+                if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                {
+                    if (ActiveColumn.Exists(x => x.NameCol == item.NameObjective))
+                    {
+                        var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
+                        var column12 = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol)).ToList();
+                        var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol) && x.Destroyed).ToList();
+                        var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " was stopped due to the destruction of the bridge. Destroyed unit: " + column12Dead.Count;
+                        GetLogStr(altmess, Color.DarkViolet);
+                        var allArrivalCol = ent.ArrivalCol + 1;
+                        var allArrivalUnits = (int)(ent.Unit / 2) - column12Dead.Count;
+                        string namecol = ent.NameCol;
+                        db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = ent.ArrivalUnit + allArrivalUnits;
+                        db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
+                        db.ColInput.First(x => x.NameCol == namecol).Active = false;
+                        db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count + (int)(ent.Unit / 2);
+                        //var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
+                        //GetLogStr(mess, Color.DarkRed);
+                        ActiveColumn.Remove(ent);
+                        RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
+                    }
+                }
+            }
+            db.SaveChanges();
+            db.Dispose();
+        }
         /// <summary>
         /// Выключает колонну
         /// </summary>
@@ -863,11 +903,12 @@ namespace Il_2.Commander.Commander
                         var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination. Destroyed unit: " + column12Dead.Count;
                         GetLogStr(altmess, Color.DarkViolet);
                         var allArrivalCol = ent.ArrivalCol + 1;
-                        var allArrivalUnits = ent.Unit + ent.ArrivalUnit - ent.DestroyedUnits;
+                        var allArrivalUnits = ent.Unit - column12Dead.Count;
                         string namecol = ent.NameCol;
-                        db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = allArrivalUnits;
+                        db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = ent.ArrivalUnit + allArrivalUnits;
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
                         db.ColInput.First(x => x.NameCol == namecol).Active = false;
+                        db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count;
                         var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
                         GetLogStr(mess, Color.DarkRed);
                         ActiveColumn.Remove(ent);
@@ -1041,7 +1082,7 @@ namespace Il_2.Commander.Commander
             FileInfo fi = new FileInfo(pathLog);
             File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
             UpdateCurrentPlayers();
-            if(TriggerTime)
+            if (TriggerTime)
             {
                 StartColumn(101);
                 StartColumn(201);
@@ -1357,7 +1398,7 @@ namespace Il_2.Commander.Commander
         /// <param name="pilot">Пилот</param>
         private void SupplyCauldron(AType6 type6, AType10 pilot)
         {
-            if(!AddSupplyPointForCauldron(type6, pilot))
+            if (!AddSupplyPointForCauldron(type6, pilot))
             {
                 AddSupplyPointForPilot(type6, pilot);
             }
@@ -1378,7 +1419,7 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            if(SupplyPoint.Count > 0)
+            if (SupplyPoint.Count > 0)
             {
                 var minDist = double.MaxValue;
                 GraphCity point = new GraphCity();
@@ -1393,7 +1434,7 @@ namespace Il_2.Commander.Commander
                 }
                 if (!string.IsNullOrEmpty(point.Name_en))
                 {
-                    if(pilot.Cargo > 0)
+                    if (pilot.Cargo > 0)
                     {
                         if (pilot.Player != null)
                         {
@@ -1665,7 +1706,7 @@ namespace Il_2.Commander.Commander
             {
                 victories.Clear();
             }
-            if(airSupplies.Count > 0)
+            if (airSupplies.Count > 0)
             {
                 airSupplies.Clear();
             }
