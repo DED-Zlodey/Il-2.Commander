@@ -88,6 +88,7 @@ namespace Il_2.Commander.Commander
         /// Список воздушного снабжения
         /// </summary>
         private List<HandlingAirSupply> airSupplies = new List<HandlingAirSupply>();
+        private List<AType12> AllLogs = new List<AType12>();
         /// <summary>
         /// крайний лог-файл
         /// </summary>
@@ -506,6 +507,7 @@ namespace Il_2.Commander.Commander
                 if (str[i].Contains("AType:12 "))
                 {
                     AType12 aType = new AType12(str[i]);
+                    AllLogs.Add(aType);
                     if (ActiveColumn.Exists(x => x.NameCol.Equals(aType.NAME)))
                     {
                         aType.Unit = ActiveColumn.Find(x => x.NameCol.Equals(aType.NAME)).Unit;
@@ -1709,6 +1711,10 @@ namespace Il_2.Commander.Commander
             if (airSupplies.Count > 0)
             {
                 airSupplies.Clear();
+            }
+            if(AllLogs.Count > 0)
+            {
+                AllLogs.Clear();
             }
         }
         /// <summary>
