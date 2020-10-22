@@ -501,7 +501,8 @@ namespace Il_2.Commander.Commander
                     {
                         DisableColumnBridge(aType);
                     }
-                    var mess = "Objective: " + aType.OBJID.ToString() + " TYPE:" + aType.TYPE + " ICTYPE:" + aType.ICTYPE;
+
+                    var mess = "Objective: " + aType.OBJID.ToString() + " TYPE:" + aType.TYPE + " ICTYPE:" + aType.ICTYPE + " Quad: " + GetQuadForMap(aType);
                     GetLogStr(mess, Color.DarkGreen);
                 }
                 if (str[i].Contains("AType:12 "))
@@ -786,7 +787,7 @@ namespace Il_2.Commander.Commander
         /// <param name="aType">Объект AType:3</param>
         private void KillUnitColumn(AType3 aType)
         {
-            var ent = ColumnAType12.First(x => x.ID == aType.TID && !x.Destroyed);
+            var ent = ColumnAType12.FindLast(x => x.ID == aType.TID && !x.Destroyed);
             var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
             column.DestroyedUnits = column.DestroyedUnits + 1;
             ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
@@ -1968,6 +1969,18 @@ namespace Il_2.Commander.Commander
             {
                 return 201;
             }
+        }
+        private string GetQuadForMap(GraphCity ent)
+        {
+            var firstquad = string.Format("{0:00}", Math.Ceiling((230400 - ent.XPos) / 10000));
+            var secondquad = string.Format("{0:00}", Math.Ceiling(ent.ZPos / 10000));
+            return firstquad + secondquad;
+        }
+        private string GetQuadForMap(AType8 aType)
+        {
+            var firstquad = string.Format("{0:00}", Math.Ceiling((230400 - aType.XPos) / 10000));
+            var secondquad = string.Format("{0:00}", Math.Ceiling(aType.ZPos / 10000));
+            return firstquad + secondquad;
         }
     }
     enum TypeColumn
