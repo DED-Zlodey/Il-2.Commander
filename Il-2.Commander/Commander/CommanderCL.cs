@@ -554,7 +554,7 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
-            var countActivCol = ActiveColumn.Where(x => x.Coalition == coal).ToList().Count;
+            var countActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList().Count;
             if (countActivCol < 3 && allcolumn.Count > 0)
             {
                 int iter = 3 - countActivCol;
@@ -791,7 +791,7 @@ namespace Il_2.Commander.Commander
             var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
             column.DestroyedUnits = column.DestroyedUnits + 1;
             ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
-            ColumnAType12.First(x => x.ID == aType.TID && !x.Destroyed).Destroyed = true;
+            ColumnAType12.FindLast(x => x.ID == aType.TID && !x.Destroyed).Destroyed = true;
             var column12 = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol)).ToList();
             var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol) && x.Destroyed).ToList();
             if (ent.Unit <= column12Dead.Count)
