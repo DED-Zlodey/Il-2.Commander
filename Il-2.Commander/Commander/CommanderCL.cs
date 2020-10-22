@@ -554,12 +554,21 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
-            var countActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList().Count;
-            if (countActivCol < 3 && allcolumn.Count > 0)
+            var countActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
+            foreach(var item in countActivCol)
             {
-                int iter = 3 - countActivCol;
+                var entBP = bp.FirstOrDefault(x => x.WHID == item.NWH && x.Coalition == coal);
+                if(entBP != null)
+                {
+                    bp.Remove(entBP);
+                }
+            }
+            if (countActivCol.Count < 3 && allcolumn.Count > 0)
+            {
+                int iter = 3 - countActivCol.Count;
                 for (int i = 0; i < iter; i++)
                 {
+                    
                     var allwhcol = allcolumn.Where(x => x.NWH == bp[i].WHID && x.Coalition == bp[i].Coalition).ToList();
                     if (allwhcol.Count > 0)
                     {
