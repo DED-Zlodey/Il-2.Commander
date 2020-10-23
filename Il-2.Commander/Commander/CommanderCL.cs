@@ -209,8 +209,12 @@ namespace Il_2.Commander.Commander
                                 if (ent != null)
                                 {
                                     db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = ent.PointsKotel + item.Pilot.Cargo;
-                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, item.Pilot.Player.Cid);
-                                    RconCommands.Enqueue(sendall);
+                                    var entpilot = onlinePlayers.FirstOrDefault(x => x.PlayerId == item.Pilot.LOGIN);
+                                    if(entpilot != null)
+                                    {
+                                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, entpilot.Cid);
+                                        RconCommands.Enqueue(sendall);
+                                    }
                                     GetLogStr(item.Command, Color.DarkGreen);
                                     pilotsList.First(x => x.LOGIN == item.Pilot.LOGIN).Cargo = 0;
                                     deletes.Add(item);
@@ -1452,12 +1456,13 @@ namespace Il_2.Commander.Commander
                 }
                 if (!string.IsNullOrEmpty(point.Name_en))
                 {
+                    var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
                     if (pilot.Cargo > 0)
                     {
-                        if (pilot.Player != null)
+                        if (ent != null)
                         {
                             var messMoment = "-=COMMANDER=- " + pilot.NAME + " Successful landing. Wait for the plane to unload (~1 min). Takeoff is prohibited.";
-                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, pilot.Player.Cid);
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
                             RconCommands.Enqueue(sendall);
                         }
                         var mess = "-=COMMANDER=- " + pilot.NAME + " the plane is unloaded and you can take off." + " Supplies of food and ammunition have been replenished in the city of " + point.Name_en;
@@ -1467,9 +1472,12 @@ namespace Il_2.Commander.Commander
                     }
                     else
                     {
-                        var messMoment = "-=COMMANDER=- " + pilot.NAME + " The plane does not contain cargo.";
-                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, pilot.Player.Cid);
-                        RconCommands.Enqueue(sendall);
+                        if(ent != null)
+                        {
+                            var messMoment = "-=COMMANDER=- " + pilot.NAME + " The plane does not contain cargo.";
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
+                            RconCommands.Enqueue(sendall);
+                        }
                     }
                 }
             }
@@ -1492,16 +1500,21 @@ namespace Il_2.Commander.Commander
             }
             if (SupplyFields.Count > 0)
             {
-                if (pilot.Player != null)
+                var citys = db.GraphCity.FirstOrDefault(x => x.IndexCity == SupplyFields[0].IndexCity);
+                if(!citys.Kotel)
                 {
-                    var messMoment = "-=COMMANDER=- " + pilot.NAME + " Successful landing. Wait for the plane to load (~1 min). Takeoff is prohibited.";
-                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, pilot.Player.Cid);
-                    RconCommands.Enqueue(sendall);
+                    var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
+                    if (ent != null)
+                    {
+                        var messMoment = "-=COMMANDER=- " + pilot.NAME + " Successful landing. Wait for the plane to load (~1 min). Takeoff is prohibited.";
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
+                        RconCommands.Enqueue(sendall);
+                    }
+                    var mess = "-=COMMANDER=- " + pilot.NAME + " the plane is loaded, you can take off.";
+                    airSupplies.Add(new HandlingAirSupply(mess, DateTime.Now, TypeSupply.ForPilot, 60, 0, pilot));
+                    db.Dispose();
+                    return true;
                 }
-                var mess = "-=COMMANDER=- " + pilot.NAME + " the plane is loaded, you can take off.";
-                airSupplies.Add(new HandlingAirSupply(mess, DateTime.Now, TypeSupply.ForPilot, 60, 0, pilot));
-                db.Dispose();
-                return true;
             }
             db.Dispose();
             return false;
