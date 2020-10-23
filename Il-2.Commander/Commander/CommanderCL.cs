@@ -195,6 +195,7 @@ namespace Il_2.Commander.Commander
                 qrcon = false;
                 var localdt = DateTime.Now;
                 List<HandlingAirSupply> deletes = new List<HandlingAirSupply>();
+                ExpertDB db = new ExpertDB();
                 foreach (var item in airSupplies)
                 {
                     var elapsed = localdt - item.CreateTime;
@@ -202,15 +203,14 @@ namespace Il_2.Commander.Commander
                     {
                         if (item.TypeSupply == TypeSupply.ForCity)
                         {
-                            ExpertDB db = new ExpertDB();
                             if (pilotsList.Exists(x => x.LOGIN == item.Pilot.LOGIN))
                             {
                                 var ent = db.GraphCity.FirstOrDefault(x => x.IndexCity == item.IndexCity);
                                 if (ent != null)
                                 {
                                     db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = ent.PointsKotel + item.Pilot.Cargo;
-                                    var entpilot = onlinePlayers.FirstOrDefault(x => x.PlayerId == item.Pilot.LOGIN);
-                                    if(entpilot != null)
+                                    var entpilot = onlinePlayers.FirstOrDefault(x => x.Name == item.Pilot.NAME);
+                                    if (entpilot != null)
                                     {
                                         RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, entpilot.Cid);
                                         RconCommands.Enqueue(sendall);
@@ -221,12 +221,17 @@ namespace Il_2.Commander.Commander
                                     db.SaveChanges();
                                 }
                             }
-                            db.Dispose();
                         }
                         if (item.TypeSupply == TypeSupply.ForPilot)
                         {
                             if (pilotsList.Exists(x => x.LOGIN == item.Pilot.LOGIN))
                             {
+                                var entpilot = onlinePlayers.FirstOrDefault(x => x.Name == item.Pilot.NAME);
+                                if (entpilot != null)
+                                {
+                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, entpilot.Cid);
+                                    RconCommands.Enqueue(sendall);
+                                }
                                 pilotsList.First(x => x.LOGIN == item.Pilot.LOGIN).Cargo = 0.35;
                                 GetLogStr(item.Command, Color.DarkGreen);
                                 deletes.Add(item);
@@ -238,6 +243,7 @@ namespace Il_2.Commander.Commander
                 {
                     airSupplies.Remove(item);
                 }
+                db.Dispose();
                 qrcon = true;
             }
         }
@@ -562,10 +568,10 @@ namespace Il_2.Commander.Commander
             var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
             var countActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
-            foreach(var item in countActivCol)
+            foreach (var item in countActivCol)
             {
                 var entBP = bp.FirstOrDefault(x => x.WHID == item.NWH && x.Coalition == coal);
-                if(entBP != null)
+                if (entBP != null)
                 {
                     bp.Remove(entBP);
                 }
@@ -575,7 +581,7 @@ namespace Il_2.Commander.Commander
                 int iter = 3 - countActivCol.Count;
                 for (int i = 0; i < iter; i++)
                 {
-                    
+
                     var allwhcol = allcolumn.Where(x => x.NWH == bp[i].WHID && x.Coalition == bp[i].Coalition).ToList();
                     if (allwhcol.Count > 0)
                     {
@@ -629,7 +635,7 @@ namespace Il_2.Commander.Commander
                     {
                         reviewMapTarget = true;
                         continue;
-                    }
+                    }                 
                     for (int i = 0; i < Bridges.Count; i++)
                     {
                         var Xres = Bridges[i].XPos - item.XPos;
@@ -779,7 +785,13 @@ namespace Il_2.Commander.Commander
             {
                 RconCommand command = new RconCommand(Rcontype.Input, item.NameBridge);
                 RconCommands.Enqueue(command);
-                var mess = "-=COMMANDER=-: Bridge: " + item.NameBridge + " Destroyed ";
+                var mess = "-=COMMANDER=-: The bridge in square [" + GetQuadForMap(bridge.ZPos, bridge.XPos) + "] is destroyed.";
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
                 GetLogStr(mess, Color.DarkMagenta);
                 string namecol = bridge.NameColumn;
                 var ent = db.ColInput.First(x => x.NameCol == namecol);
@@ -804,7 +816,7 @@ namespace Il_2.Commander.Commander
         private void KillUnitColumn(AType3 aType)
         {
             var ent = ColumnAType12.FindLast(x => x.ID == aType.TID && !x.Destroyed);
-            if(ent != null)
+            if (ent != null)
             {
                 var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
                 column.DestroyedUnits = column.DestroyedUnits + 1;
@@ -1127,6 +1139,8 @@ namespace Il_2.Commander.Commander
                 if (item.SerialNumber != 1)
                     redQ.Enqueue(item);
             }
+            var bridges = db.InputsBridge.ToList();
+            Bridges.AddRange(bridges);
             db.Dispose();
         }
         /// <summary>
@@ -1456,7 +1470,7 @@ namespace Il_2.Commander.Commander
                 }
                 if (!string.IsNullOrEmpty(point.Name_en))
                 {
-                    var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
+                    var ent = onlinePlayers.FirstOrDefault(x => x.Name == pilot.NAME);
                     if (pilot.Cargo > 0)
                     {
                         if (ent != null)
@@ -1472,7 +1486,7 @@ namespace Il_2.Commander.Commander
                     }
                     else
                     {
-                        if(ent != null)
+                        if (ent != null)
                         {
                             var messMoment = "-=COMMANDER=- " + pilot.NAME + " The plane does not contain cargo.";
                             RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
@@ -1501,7 +1515,7 @@ namespace Il_2.Commander.Commander
             if (SupplyFields.Count > 0)
             {
                 var citys = db.GraphCity.FirstOrDefault(x => x.IndexCity == SupplyFields[0].IndexCity);
-                var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
+                var ent = onlinePlayers.FirstOrDefault(x => x.Name == pilot.NAME);
                 if (!citys.Kotel)
                 {
                     if (ent != null)
@@ -1750,7 +1764,7 @@ namespace Il_2.Commander.Commander
             {
                 airSupplies.Clear();
             }
-            if(AllLogs.Count > 0)
+            if (AllLogs.Count > 0)
             {
                 AllLogs.Clear();
             }
@@ -2023,6 +2037,29 @@ namespace Il_2.Commander.Commander
             var firstquad = string.Format("{0:00}", Math.Ceiling((230400 - aType.XPos) / 10000));
             var secondquad = string.Format("{0:00}", Math.Ceiling(aType.ZPos / 10000));
             return firstquad + secondquad;
+        }
+        /// <summary>
+        /// Возвращает квадрат в котором произощло событие.
+        /// </summary>
+        /// <param name="ZPos">Координата Х</param>
+        /// <param name="XPos">Координата Y</param>
+        /// <returns>Возвращает квадрат в формате строки, в котором произощло событие.</returns>
+        private string GetQuadForMap(double ZPos, double XPos)
+        {
+            var firstquad = string.Format("{0:00}", Math.Ceiling((230400 - XPos) / 10000));
+            var secondquad = string.Format("{0:00}", Math.Ceiling(ZPos / 10000));
+            return firstquad + secondquad;
+        }
+        private void SelectUserDirect(int coal)
+        {
+            ExpertDB db = new ExpertDB();
+            var ud = db.UserDirect.Where(x => x.Coalition == coal).ToList();
+            if (ud.Count > 0)
+            {
+                var maxVote = ud.Max(x => x.NVote);
+                var allMaxVote = ud.Where(x => x.NVote == maxVote);
+            }
+            db.Dispose();
         }
     }
     enum TypeColumn
