@@ -1501,9 +1501,9 @@ namespace Il_2.Commander.Commander
             if (SupplyFields.Count > 0)
             {
                 var citys = db.GraphCity.FirstOrDefault(x => x.IndexCity == SupplyFields[0].IndexCity);
-                if(!citys.Kotel)
+                var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
+                if (!citys.Kotel)
                 {
-                    var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
                     if (ent != null)
                     {
                         var messMoment = "-=COMMANDER=- " + pilot.NAME + " Successful landing. Wait for the plane to load (~1 min). Takeoff is prohibited.";
@@ -1514,6 +1514,15 @@ namespace Il_2.Commander.Commander
                     airSupplies.Add(new HandlingAirSupply(mess, DateTime.Now, TypeSupply.ForPilot, 60, 0, pilot));
                     db.Dispose();
                     return true;
+                }
+                else
+                {
+                    if (ent != null)
+                    {
+                        var mess = "-=COMMANDER=- It is impossible to supply the cauldron from this airfield.";
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, mess, ent.Cid);
+                        RconCommands.Enqueue(sendall);
+                    }
                 }
             }
             db.Dispose();
