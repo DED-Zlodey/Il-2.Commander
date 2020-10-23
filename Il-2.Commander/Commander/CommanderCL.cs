@@ -421,6 +421,10 @@ namespace Il_2.Commander.Commander
                     AType10 aType = new AType10(str[i]);
                     RconCommand wrap = new RconCommand(Rcontype.Players, aType);
                     RconCommands.Enqueue(wrap);
+                    if (aType.TYPE.Contains("Ju 52 3mg4e"))
+                    {
+                        aType.Cargo = 0.35;
+                    }
                     pilotsList.Add(aType);
                     if (onlinePlayers.Exists(x => x.PlayerId == aType.LOGIN))
                     {
