@@ -3,6 +3,7 @@
     class UserDirect
     {
         public int id { get; set; }
+        public string PilotName { get; set; }
         public int SerialNumber { get; set; }
         public int IndexCity { get; set; }
         public bool FLP { get; set; }

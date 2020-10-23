@@ -131,7 +131,7 @@ namespace Il_2.Commander
         {
             Action startgen = () =>
             {
-                commander.StartGeneration();
+                commander.HandleUserDirect();
             };
             Task taskstartgen = Task.Factory.StartNew(startgen);
             BeginInvoke((MethodInvoker)(() => timerOfficer.Stop()));

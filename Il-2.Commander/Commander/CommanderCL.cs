@@ -209,10 +209,11 @@ namespace Il_2.Commander.Commander
                                 if (ent != null)
                                 {
                                     db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = ent.PointsKotel + item.Pilot.Cargo;
-                                    var entpilot = onlinePlayers.FirstOrDefault(x => x.Name == item.Pilot.NAME);
-                                    if (entpilot != null)
+                                    var online = rcon.GetPlayerList();
+                                    var pilot = online.FirstOrDefault(x => x.PlayerId == item.Pilot.LOGIN);
+                                    if (pilot != null)
                                     {
-                                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, entpilot.Cid);
+                                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, pilot.Cid);
                                         RconCommands.Enqueue(sendall);
                                     }
                                     GetLogStr(item.Command, Color.DarkGreen);
@@ -226,10 +227,11 @@ namespace Il_2.Commander.Commander
                         {
                             if (pilotsList.Exists(x => x.LOGIN == item.Pilot.LOGIN))
                             {
-                                var entpilot = onlinePlayers.FirstOrDefault(x => x.Name == item.Pilot.NAME);
-                                if (entpilot != null)
+                                var online = rcon.GetPlayerList();
+                                var pilot = online.FirstOrDefault(x => x.PlayerId == item.Pilot.LOGIN);
+                                if (pilot != null)
                                 {
-                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, entpilot.Cid);
+                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, pilot.Cid);
                                     RconCommands.Enqueue(sendall);
                                 }
                                 pilotsList.First(x => x.LOGIN == item.Pilot.LOGIN).Cargo = 0.35;
@@ -1515,7 +1517,7 @@ namespace Il_2.Commander.Commander
             if (SupplyFields.Count > 0)
             {
                 var citys = db.GraphCity.FirstOrDefault(x => x.IndexCity == SupplyFields[0].IndexCity);
-                var ent = onlinePlayers.FirstOrDefault(x => x.Name == pilot.NAME);
+                var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
                 if (!citys.Kotel)
                 {
                     if (ent != null)
@@ -2050,6 +2052,19 @@ namespace Il_2.Commander.Commander
             var secondquad = string.Format("{0:00}", Math.Ceiling(ZPos / 10000));
             return firstquad + secondquad;
         }
+        /// <summary>
+        /// Обработка пользовательских направлений атаки. И следом сразу запуск основной генерации миссии.
+        /// </summary>
+        public void HandleUserDirect()
+        {
+            SelectUserDirect(101);
+            SelectUserDirect(201);
+            StartGeneration();
+        }
+        /// <summary>
+        /// Отсев всех лишних пользовательских направлений атаки, если они вообще есть.
+        /// </summary>
+        /// <param name="coal"></param>
         private void SelectUserDirect(int coal)
         {
             ExpertDB db = new ExpertDB();
@@ -2058,6 +2073,21 @@ namespace Il_2.Commander.Commander
             {
                 var maxVote = ud.Max(x => x.NVote);
                 var allMaxVote = ud.Where(x => x.NVote == maxVote);
+                var uidGroup = allMaxVote.GroupBy(p => p.UserId).Select(g => new { ID = g.Key }).ToList();
+                if (uidGroup.Count > 0)
+                {
+                    var index = random.Next(0, uidGroup.Count);
+                    var uid = uidGroup[index].ID;
+                    var ent = allMaxVote.Where(x => x.UserId == uid).OrderBy(x => x.SerialNumber).ToList();
+                    foreach (var item in ud)
+                    {
+                        if (item.UserId != uid)
+                        {
+                            db.UserDirect.Remove(item);
+                        }
+                    }
+                    db.SaveChanges();
+                }
             }
             db.Dispose();
         }
