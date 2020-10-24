@@ -1033,23 +1033,23 @@ namespace Il_2.Commander.Commander
             var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
             var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
             var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
-            var arrivalBP = 0;
+            var arrivalBP = 0.00;
             if (columns.Count > 0)
             {
                 foreach (var item in columns)
                 {
-                    int koef = 2;
+                    double koef = 1;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 4;
+                        koef = 1.5;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 3;
+                        koef = 1.2;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 2;
+                        koef = 1;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1067,7 +1067,7 @@ namespace Il_2.Commander.Commander
                     {
                         arrivalBP--;
                     }
-                    var finalBP = bp.Point + arrivalBP;
+                    var finalBP = bp.Point + (int)arrivalBP;
                     if (finalBP > SetApp.Config.BattlePoints)
                     {
                         finalBP = SetApp.Config.BattlePoints;
@@ -1084,26 +1084,26 @@ namespace Il_2.Commander.Commander
         private void RestoreWareHouseInMemory(int numtarget, int coal)
         {
             ExpertDB db = new ExpertDB();
-            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
+            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList(); 
             var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
             var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
-            var arrivalBP = 0;
+            var arrivalBP = 0.00;
             if (columns.Count > 0)
             {
                 foreach (var item in columns)
                 {
-                    int koef = 2;
+                    double koef = 1;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 4;
+                        koef = 1.5;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 3;
+                        koef = 1.2;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 2;
+                        koef = 1;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1121,7 +1121,7 @@ namespace Il_2.Commander.Commander
                     {
                         arrivalBP--;
                     }
-                    var finalBP = bp.Point + arrivalBP;
+                    var finalBP = bp.Point + (int)arrivalBP;
                     if (finalBP > SetApp.Config.BattlePoints)
                     {
                         finalBP = SetApp.Config.BattlePoints;
