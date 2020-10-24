@@ -154,7 +154,14 @@ namespace Il_2.Commander.Commander
                         var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
                         if (player != null)
                         {
-                            var mess = "-=COMMANDER=- " + player.Name + " your ping: " + player.Ping;
+                            var currentdt = DateTime.Now;
+                            var ts = currentdt - dt;
+                            var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
+                            if(ostatok < 0)
+                            {
+                                ostatok = 0;
+                            }
+                            var mess = "-=COMMANDER=- " + player.Name + " there are " + ostatok + " minutes left until the end of the mission";
                             RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                             RconCommands.Enqueue(wrap);
                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
@@ -421,6 +428,66 @@ namespace Il_2.Commander.Commander
                     EnableWareHouse();
                 }
                 ReadLogFile(pathLog);
+            }
+        }
+        /// <summary>
+        /// Чтение лог-файла, постановка его в очередь на обработку
+        /// </summary>
+        /// <param name="pathLog">Принимает путь до лог-файла</param>
+        private void ReadLogFile(string pathLog)
+        {
+            var str = SetApp.GetFile(pathLog);
+            if (str.Count > 1)
+            {
+                if (TriggerTime)
+                {
+                    qLog.Enqueue(str);
+                }
+                else
+                {
+                    SetVictoryLog(str, pathLog);
+                }
+            }
+            var currentdt = DateTime.Now;
+            var curmissend = currentdt - messDurTime;
+            var ts = currentdt - dt;
+            if (curmissend.TotalMinutes >= durmess)
+            {
+                messDurTime = DateTime.Now;
+                var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
+                var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+                GetLogStr(mess, Color.Black);
+            }
+            if (ts.TotalMinutes >= DurationMission)
+            {
+                if (TriggerTime)
+                {
+                    TriggerTime = false;
+                    var mess = "-=COMMANDER=- MISSION END.";
+                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                    GetLogStr(mess, Color.Red);
+                    RconCommands.Enqueue(sendall);
+                    RconCommands.Enqueue(sendred);
+                    RconCommands.Enqueue(sendblue);
+                    CreateVictoryCoalition();
+                    StartGeneration("pregen");
+                }
+            }
+            FileInfo fi = new FileInfo(pathLog);
+            File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
+            UpdateCurrentPlayers();
+            if (TriggerTime)
+            {
+                StartColumn(101);
+                StartColumn(201);
             }
         }
         public void HandleLogFile(List<string> str)
@@ -1063,66 +1130,6 @@ namespace Il_2.Commander.Commander
                 }
             }
             db.Dispose();
-        }
-        /// <summary>
-        /// Чтение лог-файла, постановка его в очередь на обработку
-        /// </summary>
-        /// <param name="pathLog">Принимает путь до лог-файла</param>
-        private void ReadLogFile(string pathLog)
-        {
-            var str = SetApp.GetFile(pathLog);
-            if (str.Count > 1)
-            {
-                if (TriggerTime)
-                {
-                    qLog.Enqueue(str);
-                }
-                else
-                {
-                    SetVictoryLog(str, pathLog);
-                }
-            }
-            var currentdt = DateTime.Now;
-            var curmissend = currentdt - messDurTime;
-            var ts = currentdt - dt;
-            if (curmissend.TotalMinutes >= durmess)
-            {
-                messDurTime = DateTime.Now;
-                var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
-                var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
-                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                RconCommands.Enqueue(sendall);
-                RconCommands.Enqueue(sendred);
-                RconCommands.Enqueue(sendblue);
-                GetLogStr(mess, Color.Black);
-            }
-            if (ts.TotalMinutes >= DurationMission)
-            {
-                if (TriggerTime)
-                {
-                    TriggerTime = false;
-                    var mess = "-=COMMANDER=- MISSION END.";
-                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                    GetLogStr(mess, Color.Red);
-                    RconCommands.Enqueue(sendall);
-                    RconCommands.Enqueue(sendred);
-                    RconCommands.Enqueue(sendblue);
-                    CreateVictoryCoalition();
-                    StartGeneration("pregen"); // Старт генератора
-                }
-            }
-            FileInfo fi = new FileInfo(pathLog);
-            File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
-            UpdateCurrentPlayers();
-            if (TriggerTime)
-            {
-                StartColumn(101);
-                StartColumn(201);
-            }
         }
         private void InitDirectPoints()
         {
