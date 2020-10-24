@@ -1808,7 +1808,7 @@ namespace Il_2.Commander.Commander
                     if (!onlinePlayers.Exists(x => x.PlayerId == players[i].PlayerId))
                     {
                         onlinePlayers.Add(players[i]);
-                        CheckRegistration(players[i]);
+                        //CheckRegistration(players[i]);
                     }
                 }
                 List<Player> deleteplayers = new List<Player>();
