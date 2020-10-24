@@ -157,7 +157,7 @@ namespace Il_2.Commander.Commander
                             var currentdt = DateTime.Now;
                             var ts = currentdt - dt;
                             var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
-                            if(ostatok < 0)
+                            if(ostatok <= 0)
                             {
                                 ostatok = 0;
                             }
@@ -2030,12 +2030,6 @@ namespace Il_2.Commander.Commander
                 return 201;
             }
         }
-        private string GetQuadForMap(GraphCity ent)
-        {
-            var firstquad = string.Format("{0:00}", Math.Ceiling((230400 - ent.XPos) / 10000));
-            var secondquad = string.Format("{0:00}", Math.Ceiling(ent.ZPos / 10000));
-            return firstquad + secondquad;
-        }
         /// <summary>
         /// Возвращает квадрат в котором произощло событие.
         /// </summary>
@@ -2075,22 +2069,20 @@ namespace Il_2.Commander.Commander
         private void SelectUserDirect(int coal)
         {
             ExpertDB db = new ExpertDB();
-            var ud = db.UserDirect.Where(x => x.Coalition == coal).ToList();
-            if (ud.Count > 0)
+            var pd = db.PilotDirect.Where(x => x.Coalition == coal).ToList();
+            if(pd.Count > 0)
             {
-                var maxVote = ud.Max(x => x.NVote);
-                var allMaxVote = ud.Where(x => x.NVote == maxVote);
-                var uidGroup = allMaxVote.GroupBy(p => p.UserId).Select(g => new { ID = g.Key }).ToList();
-                if (uidGroup.Count > 0)
+                var maxVote = pd.Max(x => x.NVote);
+                var allMaxVote = pd.Where(x => x.NVote == maxVote).ToList();
+                if(allMaxVote.Count > 0)
                 {
-                    var index = random.Next(0, uidGroup.Count);
-                    var uid = uidGroup[index].ID;
-                    var ent = allMaxVote.Where(x => x.UserId == uid).OrderBy(x => x.SerialNumber).ToList();
-                    foreach (var item in ud)
+                    int index = random.Next(0, allMaxVote.Count);
+                    var ent = allMaxVote[index];
+                    foreach(var item in pd)
                     {
-                        if (item.UserId != uid)
+                        if(item.UserId != ent.UserId)
                         {
-                            db.UserDirect.Remove(item);
+                            db.PilotDirect.Remove(item);
                         }
                     }
                     db.SaveChanges();

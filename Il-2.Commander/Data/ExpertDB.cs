@@ -46,5 +46,6 @@ namespace Il_2.Commander.Data
         public virtual DbSet<TargetBlock> TargetBlock { get; set; }
         public virtual DbSet<UserDirect> UserDirect { get; set; }
         public virtual DbSet<ColInput> ColInput { get; set; }
+        public virtual DbSet<PilotDirect> PilotDirect { get; set; }
     }
 }
