@@ -748,25 +748,8 @@ namespace Il_2.Commander.Commander
             }
             else
             {
-                bool isTarget = false;
                 bool isBridge = false;
-                for (int i = 0; i < ActiveTargets.Count; i++)
-                {
-                    if (ActiveTargets[i].GroupInput != 8)
-                    {
-                        var Xres = aType.XPos - ActiveTargets[i].XPos;
-                        var Zres = aType.ZPos - ActiveTargets[i].ZPos;
-                        double min = -0.1;
-                        double max = 0.1;
-                        if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
-                        {
-                            isTarget = true;
-                            KillTargetObj(ActiveTargets[i], aType);
-                            reviewMapTarget = true;
-                        }
-                    }
-                }
-                if(!isTarget)
+                if (!KillTargetObj(aType))
                 {
                     for (int i = 0; i < Bridges.Count; i++)
                     {
@@ -781,14 +764,18 @@ namespace Il_2.Commander.Commander
                             break;
                         }
                     }
-                }
-                if(!isBridge && !isTarget)
-                {
-                    if (HandlingForWH(aType))
+                    if (!isBridge)
                     {
-                        reviewMapTarget = true;
+                        if (HandlingForWH(aType))
+                        {
+                            reviewMapTarget = true;
+                        }
+                        CheckDisableTarget(aType);
                     }
-                    CheckDisableTarget(aType);
+                }
+                else
+                {
+                    reviewMapTarget = true;
                 }
             }
             if (reviewMapTarget)
@@ -834,6 +821,80 @@ namespace Il_2.Commander.Commander
                 }
             }
             db.Dispose();
+        }
+        /// <summary>
+        /// Уничтожение объекта внутри цели. А так же проверка уничтожена ли цель целиком. Если уничтожена цель выключается.
+        /// </summary>
+        /// <param name="aType">Событие kill</param>
+        /// <returns></returns>
+        private bool KillTargetObj(AType3 aType)
+        {
+            bool output = false;
+            ExpertDB db = new ExpertDB();
+            var targets = db.CompTarget.Where(x => x.Enable && x.InernalWeight > x.Destroed).ToList();
+            foreach(var item in targets)
+            {
+                var Xres = aType.XPos - item.XPos;
+                var Zres = aType.ZPos - item.ZPos;
+                double min = -0.1;
+                double max = 0.1;
+                if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                {
+                    var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
+                    var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
+                    if (entON.Enable == 1)
+                    {
+                        db.CompTarget.First(x => x.id == item.id && x.ZPos == item.ZPos && x.XPos == item.XPos).Destroed = item.Destroed + 1;
+                        targets.First(x => x.id == item.id && x.ZPos == item.ZPos && x.XPos == item.XPos).Destroed = item.Destroed + 1;
+                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count;
+                        var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
+                        var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
+                        if (countMandatory <= countDestroyedMandatory)
+                        {
+                            RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                            RconCommands.Enqueue(command);
+                            var color = Color.Black;
+                            var coalstr = string.Empty;
+                            if (ent.Coalition == 201)
+                            {
+                                color = Color.DarkRed;
+                                coalstr = "Allies destroyed ";
+                            }
+                            if (ent.Coalition == 101)
+                            {
+                                color = Color.DarkBlue;
+                                coalstr = "Axis destroyed ";
+                            }
+                            var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                            GetLogStr(mess, color);
+                            db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                            RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                            RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                            RconCommands.Enqueue(sendall);
+                            RconCommands.Enqueue(sendred);
+                            RconCommands.Enqueue(sendblue);
+                        }
+                        db.SaveChanges();
+                        var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
+                        db.Dispose();
+                        if (alltargets.Count == 0)
+                        {
+                            int invcoal = InvertedCoalition(ent.Coalition);
+                            ChangeCoalitionPoint(ent.IndexPoint);
+                            SetAttackPoint(invcoal);
+                            EnableTargetsToCoalition(invcoal);
+                        }
+                        output = true;
+                        break;
+                    }
+                }
+            }
+            if(db != null)
+            {
+                db.Dispose();
+            }
+            return output;
         }
         /// <summary>
         /// Уничтожение объекта внутри цели. А так же проверка уничтожена ли цель целиком. Если уничтожена цель выключается.

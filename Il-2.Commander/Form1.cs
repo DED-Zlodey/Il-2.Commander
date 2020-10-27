@@ -139,11 +139,14 @@ namespace Il_2.Commander
 
         private void timerRcon_Tick(object sender, EventArgs e)
         {
-            Action startgen = () =>
+            if(busy)
             {
-                commander.SendRconCommand();
-            };
-            Task taskstartgen = Task.Factory.StartNew(startgen);
+                Action startgen = () =>
+                {
+                    commander.SendRconCommand();
+                };
+                Task taskstartgen = Task.Factory.StartNew(startgen);
+            }
         }
 
         private void timerLog_Tick(object sender, EventArgs e)
