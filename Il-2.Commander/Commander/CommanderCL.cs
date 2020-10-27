@@ -133,7 +133,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void SendRconCommand()
         {
-            if (RconCommands.Count > 0 && qrcon)
+            if (RconCommands.Count > 0 && qrcon && Form1.busy)
             {
                 if (rcon != null && RconCommands.Count > 0)
                 {
@@ -173,7 +173,7 @@ namespace Il_2.Commander.Commander
                     qrcon = true;
                 }
             }
-            if (deferredCommands.Count > 0 && qrcon)
+            if (deferredCommands.Count > 0 && qrcon && Form1.busy)
             {
                 qrcon = false;
                 var localdt = DateTime.Now;
@@ -197,7 +197,7 @@ namespace Il_2.Commander.Commander
                 }
                 qrcon = true;
             }
-            if (airSupplies.Count > 0)
+            if (airSupplies.Count > 0 && qrcon && Form1.busy)
             {
                 qrcon = false;
                 var localdt = DateTime.Now;
@@ -420,7 +420,7 @@ namespace Il_2.Commander.Commander
                     GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
                     SetDurationMission(1);
                     SavedMissionTimeStart();
-                    EnableFields();
+                    //EnableFields();
                     InitDirectPoints();
                     SetAttackPoint();
                     EnableTargetsToCoalition(201);
@@ -492,7 +492,7 @@ namespace Il_2.Commander.Commander
         }
         public void HandleLogFile(List<string> str)
         {
-            List<AType3> atype3 = new List<AType3>();
+            //List<AType3> atype3 = new List<AType3>();
             for (int i = 0; i < str.Count; i++)
             {
                 if (str[i].Contains("AType:10 "))
@@ -534,7 +534,8 @@ namespace Il_2.Commander.Commander
                     AType3 aType = new AType3(str[i]);
                     if (!pilotsList.Exists(x => x.PID == aType.TID) && !pilotsList.Exists(x => x.PLID == aType.TID))
                     {
-                        atype3.Add(aType);
+                        //atype3.Add(aType);
+                        CheckDestroyTarget(aType);
                     }
                 }
                 if (str[i].Contains("AType:5 "))
@@ -607,10 +608,10 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            if (atype3.Count > 0 && TriggerTime)
-            {
-                CheckDestroyTarget(atype3);
-            }
+            //if (atype3.Count > 0 && TriggerTime)
+            //{
+            //    CheckDestroyTarget(atype3);
+            //}
             if (TriggerTime)
             {
                 Form1.busy = true;
@@ -728,6 +729,66 @@ namespace Il_2.Commander.Commander
                         continue;
                     }
                     CheckDisableTarget(item);
+                }
+            }
+            if (reviewMapTarget)
+            {
+                if (messenger != null)
+                {
+                    messenger.SpecSend("Targets");
+                }
+            }
+        }
+        private void CheckDestroyTarget(AType3 aType)
+        {
+            bool reviewMapTarget = false;
+            if (ColumnAType12.Exists(x => x.ID == aType.TID))
+            {
+                KillUnitColumn(aType);
+            }
+            else
+            {
+                bool isTarget = false;
+                bool isBridge = false;
+                for (int i = 0; i < ActiveTargets.Count; i++)
+                {
+                    if (ActiveTargets[i].GroupInput != 8)
+                    {
+                        var Xres = aType.XPos - ActiveTargets[i].XPos;
+                        var Zres = aType.ZPos - ActiveTargets[i].ZPos;
+                        double min = -0.1;
+                        double max = 0.1;
+                        if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                        {
+                            isTarget = true;
+                            KillTargetObj(ActiveTargets[i], aType);
+                            reviewMapTarget = true;
+                        }
+                    }
+                }
+                if(!isTarget)
+                {
+                    for (int i = 0; i < Bridges.Count; i++)
+                    {
+                        var Xres = Bridges[i].XPos - aType.XPos;
+                        var Zres = Bridges[i].ZPos - aType.ZPos;
+                        double min = -0.1;
+                        double max = 0.1;
+                        if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                        {
+                            isBridge = true;
+                            KillBridge(Bridges[i]);
+                            break;
+                        }
+                    }
+                }
+                if(!isBridge && !isTarget)
+                {
+                    if (HandlingForWH(aType))
+                    {
+                        reviewMapTarget = true;
+                    }
+                    CheckDisableTarget(aType);
                 }
             }
             if (reviewMapTarget)
@@ -1055,17 +1116,18 @@ namespace Il_2.Commander.Commander
                 }
                 if (arrivalBP < damage.Count)
                 {
-                    for (int i = 0; i < arrivalBP; i++)
-                    {
-                        int rindex = random.Next(0, damage.Count);
-                        var ent = damage[rindex];
-                    }
+                    //var counter = (int)arrivalBP;
+                    //for (int i = 0; i < counter; i++)
+                    //{
+                    //    int rindex = random.Next(0, damage.Count);
+                    //    var ent = damage[rindex];
+                    //}
                 }
                 else
                 {
                     foreach (var item in damage)
                     {
-                        arrivalBP--;
+                        arrivalBP = arrivalBP - 1;
                     }
                     var finalBP = bp.Point + (int)arrivalBP;
                     if (finalBP > SetApp.Config.BattlePoints)
@@ -1109,17 +1171,17 @@ namespace Il_2.Commander.Commander
                 }
                 if (arrivalBP < damage.Count)
                 {
-                    for (int i = 0; i < arrivalBP; i++)
-                    {
-                        int rindex = random.Next(0, damage.Count);
-                        var ent = damage[rindex];
-                    }
+                    //for (int i = 0; i < arrivalBP; i++)
+                    //{
+                    //    int rindex = random.Next(0, damage.Count);
+                    //    var ent = damage[rindex];
+                    //}
                 }
                 else
                 {
                     foreach (var item in damage)
                     {
-                        arrivalBP--;
+                        arrivalBP = arrivalBP - 1;
                     }
                     var finalBP = bp.Point + (int)arrivalBP;
                     if (finalBP > SetApp.Config.BattlePoints)
@@ -1242,9 +1304,9 @@ namespace Il_2.Commander.Commander
                 double max = 0.1;
                 if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                 {
-                    if (Blocks.Exists(x => x.TICK == aType.TICK && x.ID == aType.TID))
+                    if (Blocks.Exists(x => x.ID == aType.TID))
                     {
-                        var ent = Blocks.FindLast(x => x.TICK == aType.TICK && x.ID == aType.TID);
+                        var ent = Blocks.FindLast(x => x.ID == aType.TID);
                         if (ent.TYPE.Contains("[") && ent.TYPE.Contains("]"))
                         {
                             var res = ent.TYPE.Replace("[", "{").Replace("]", "}");

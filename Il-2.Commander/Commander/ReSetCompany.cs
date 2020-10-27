@@ -27,7 +27,7 @@ namespace Il_2.Commander.Commander
                 db.GraphCity.First(x => x.IndexCity == indexcity).Kotel = false;
                 db.GraphCity.First(x => x.IndexCity == indexcity).PointsKotel = 0;
             }
-            foreach (var item in db.PreSetupMap)
+            foreach (var item in setup)
             {
                 db.PreSetupMap.First(x => x.id == item.id).Played = false;
             }
