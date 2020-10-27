@@ -534,7 +534,6 @@ namespace Il_2.Commander.Commander
                     AType3 aType = new AType3(str[i]);
                     if (!pilotsList.Exists(x => x.PID == aType.TID) && !pilotsList.Exists(x => x.PLID == aType.TID))
                     {
-                        //atype3.Add(aType);
                         CheckDestroyTarget(aType);
                     }
                 }
@@ -608,10 +607,6 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            //if (atype3.Count > 0 && TriggerTime)
-            //{
-            //    CheckDestroyTarget(atype3);
-            //}
             if (TriggerTime)
             {
                 Form1.busy = true;
@@ -1134,8 +1129,6 @@ namespace Il_2.Commander.Commander
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
                         db.ColInput.First(x => x.NameCol == namecol).Active = false;
                         db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count;
-                        var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
-                        GetLogStr(mess, Color.DarkRed);
                         ActiveColumn.Remove(ent);
                         RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
                     }
