@@ -133,7 +133,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void SendRconCommand()
         {
-            if (RconCommands.Count > 0 && qrcon && Form1.busy)
+            if (RconCommands.Count > 0 && qrcon)
             {
                 if (rcon != null && RconCommands.Count > 0)
                 {
@@ -173,7 +173,7 @@ namespace Il_2.Commander.Commander
                     qrcon = true;
                 }
             }
-            if (deferredCommands.Count > 0 && qrcon && Form1.busy)
+            if (deferredCommands.Count > 0 && qrcon)
             {
                 qrcon = false;
                 var localdt = DateTime.Now;
@@ -197,7 +197,7 @@ namespace Il_2.Commander.Commander
                 }
                 qrcon = true;
             }
-            if (airSupplies.Count > 0 && qrcon && Form1.busy)
+            if (airSupplies.Count > 0 && qrcon)
             {
                 qrcon = false;
                 var localdt = DateTime.Now;
@@ -420,7 +420,6 @@ namespace Il_2.Commander.Commander
                     GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
                     SetDurationMission(1);
                     SavedMissionTimeStart();
-                    //EnableFields();
                     InitDirectPoints();
                     SetAttackPoint();
                     EnableTargetsToCoalition(201);
@@ -493,6 +492,7 @@ namespace Il_2.Commander.Commander
         public void HandleLogFile(List<string> str)
         {
             //List<AType3> atype3 = new List<AType3>();
+            bool updateTarget = false;
             for (int i = 0; i < str.Count; i++)
             {
                 if (str[i].Contains("AType:10 "))
@@ -535,6 +535,7 @@ namespace Il_2.Commander.Commander
                     if (!pilotsList.Exists(x => x.PID == aType.TID) && !pilotsList.Exists(x => x.PLID == aType.TID))
                     {
                         CheckDestroyTarget(aType);
+                        updateTarget = true;
                     }
                 }
                 if (str[i].Contains("AType:5 "))
@@ -605,6 +606,13 @@ namespace Il_2.Commander.Commander
                     {
                         Blocks.Add(aType);
                     }
+                }
+            }
+            if(updateTarget)
+            {
+                if (messenger != null)
+                {
+                    messenger.SpecSend("Targets");
                 }
             }
             if (TriggerTime)
@@ -775,10 +783,10 @@ namespace Il_2.Commander.Commander
             }
             if (reviewMapTarget)
             {
-                if (messenger != null)
-                {
-                    messenger.SpecSend("Targets");
-                }
+                //if (messenger != null)
+                //{
+                //    messenger.SpecSend("Targets");
+                //}
             }
         }
         /// <summary>
