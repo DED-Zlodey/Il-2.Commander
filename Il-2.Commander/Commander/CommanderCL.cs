@@ -852,8 +852,10 @@ namespace Il_2.Commander.Commander
                             int destroy = item.Destroed + 1;
                             targets.First(x => x.id == item.id).Destroed = destroy;
                             db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
+                            var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
+                            GetLogStr(DestroyedMess, Color.DarkGoldenrod);
                         }
-                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count;
+                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
                         var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
                         var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
                         if (countMandatory <= countDestroyedMandatory)
