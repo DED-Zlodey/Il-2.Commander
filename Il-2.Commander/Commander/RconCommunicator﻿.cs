@@ -55,6 +55,10 @@ namespace Il_2.Commander.Commander
             string command = "opensds " + cmd;
             return connection.ExecuteCommand(command);
         }
+        public string ResetSPS()
+        {
+            return connection.ExecuteCommand("spsreset");
+        }
 
         public string My﻿Status()
         {

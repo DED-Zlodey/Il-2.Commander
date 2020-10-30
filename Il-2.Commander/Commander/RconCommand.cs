@@ -29,11 +29,16 @@ namespace Il_2.Commander.Commander
             Type = rtype;
             aType = atype;
         }
+        public RconCommand(Rcontype rtype)
+        {
+            Type = rtype;
+        }
     }
     enum Rcontype
     {
         Input = 1,
         ChatMsg = 2,
-        Players = 3
+        Players = 3,
+        ReSetSPS = 4
     }
 }

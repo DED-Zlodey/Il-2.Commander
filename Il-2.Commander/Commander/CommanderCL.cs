@@ -170,6 +170,11 @@ namespace Il_2.Commander.Commander
                             }
                         }
                     }
+                    if(result != null && result.Type == Rcontype.ReSetSPS)
+                    {
+                        rcon.ResetSPS();
+                        GetLogStr("Reset SPS: " + DateTime.Now.ToLongTimeString(), Color.Black);
+                    }
                     qrcon = true;
                 }
             }
@@ -608,7 +613,9 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            if(updateTarget)
+            RconCommand resetSDS = new RconCommand(Rcontype.ReSetSPS);
+            RconCommands.Enqueue(resetSDS);
+            if (updateTarget)
             {
                 if (messenger != null)
                 {
@@ -856,6 +863,10 @@ namespace Il_2.Commander.Commander
                             GetLogStr(DestroyedMess, Color.DarkGoldenrod);
                         }
                         var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
+                        if(countMandatory < 0)
+                        {
+                            countMandatory = 0;
+                        }
                         var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
                         var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
                         if (countMandatory <= countDestroyedMandatory)
