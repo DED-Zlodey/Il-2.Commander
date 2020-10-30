@@ -172,8 +172,10 @@ namespace Il_2.Commander.Commander
                     }
                     if(result != null && result.Type == Rcontype.ReSetSPS)
                     {
+                        Color myRgbColor = new Color();
+                        myRgbColor = Color.FromArgb(0, 166, 23);
                         rcon.ResetSPS();
-                        GetLogStr("Reset SPS: " + DateTime.Now.ToLongTimeString(), Color.Black);
+                        GetLogStr("Reset SPS: " + DateTime.Now.ToLongTimeString(), myRgbColor);
                     }
                     qrcon = true;
                 }
@@ -647,8 +649,8 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
-            var countActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
-            foreach (var item in countActivCol)
+            var ActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
+            foreach (var item in ActivCol)
             {
                 var entBP = bp.FirstOrDefault(x => x.WHID == item.NWH && x.Coalition == coal);
                 if (entBP != null)
@@ -656,9 +658,9 @@ namespace Il_2.Commander.Commander
                     bp.Remove(entBP);
                 }
             }
-            if (countActivCol.Count < 3 && allcolumn.Count > 0)
+            if (ActivCol.Count < 3 && allcolumn.Count > 0)
             {
-                int iter = 3 - countActivCol.Count;
+                int iter = 3 - ActivCol.Count;
                 for (int i = 0; i < iter; i++)
                 {
 
