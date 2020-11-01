@@ -1527,20 +1527,6 @@ namespace Il_2.Commander.Commander
             messenger.SpecSend("Timer");
         }
         /// <summary>
-        /// Включение ПВО аэродромов
-        /// </summary>
-        private void EnableFields()
-        {
-            ExpertDB db = new ExpertDB();
-            var fields = db.ServerInputs.Where(x => x.Name.Contains("AField-AAA-ON-"));
-            foreach (var item in fields)
-            {
-                RconCommand onfield = new RconCommand(Rcontype.Input, item.Name);
-                RconCommands.Enqueue(onfield);
-            }
-            db.Dispose();
-        }
-        /// <summary>
         /// Включает иконки разведки
         /// </summary>
         /// <param name="type6">AType:6 объект</param>
