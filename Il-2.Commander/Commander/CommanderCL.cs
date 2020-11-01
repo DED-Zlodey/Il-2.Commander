@@ -616,8 +616,8 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            RconCommand resetSDS = new RconCommand(Rcontype.ReSetSPS);
-            RconCommands.Enqueue(resetSDS);
+            //RconCommand resetSDS = new RconCommand(Rcontype.ReSetSPS);
+            //RconCommands.Enqueue(resetSDS);
             if (updateTarget)
             {
                 if (messenger != null)
