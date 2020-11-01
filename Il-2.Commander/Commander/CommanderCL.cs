@@ -476,11 +476,9 @@ namespace Il_2.Commander.Commander
                 {
                     TriggerTime = false;
                     var mess = "-=COMMANDER=- MISSION END.";
-                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
                     RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
                     RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
                     GetLogStr(mess, Color.Red);
-                    RconCommands.Enqueue(sendall);
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
                     CreateVictoryCoalition();
@@ -496,9 +494,12 @@ namespace Il_2.Commander.Commander
                 StartColumn(201);
             }
         }
+        /// <summary>
+        /// Обработка логфайла из очереди.
+        /// </summary>
+        /// <param name="str">Лог файл в видет списка строк</param>
         public void HandleLogFile(List<string> str)
         {
-            //List<AType3> atype3 = new List<AType3>();
             bool updateTarget = false;
             for (int i = 0; i < str.Count; i++)
             {
@@ -624,7 +625,7 @@ namespace Il_2.Commander.Commander
                     messenger.SpecSend("Targets");
                 }
             }
-            if (TriggerTime)
+            if (TriggerTime || RconCommands.Count > 0)
             {
                 Form1.busy = true;
             }
@@ -1740,25 +1741,23 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private void CreateVictoryCoalition()
         {
-            var counrVicRed = victories.Where(x => x.Coalition == 101).ToList().Count;
-            var counrVicBlue = victories.Where(x => x.Coalition == 201).ToList().Count;
+            var countVicRed = victories.Where(x => x.Coalition == 101).ToList().Count;
+            var countVicBlue = victories.Where(x => x.Coalition == 201).ToList().Count;
             foreach (var item in victories)
             {
                 var mess = "-=COMMANDER=- " + GetNameCoalition(item.Coalition) + " captured the locality of " + item.NameCity;
-                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
                 RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
                 RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
                 GetLogStr(mess, Color.Red);
-                RconCommands.Enqueue(sendall);
                 RconCommands.Enqueue(sendred);
                 RconCommands.Enqueue(sendblue);
             }
-            if (counrVicBlue > counrVicRed)
+            if (countVicBlue > countVicRed)
             {
                 RconCommand command = new RconCommand(Rcontype.Input, "Victory201");
                 RconCommands.Enqueue(command);
             }
-            if (counrVicBlue < counrVicRed)
+            if (countVicBlue < countVicRed)
             {
                 RconCommand command = new RconCommand(Rcontype.Input, "Victory101");
                 RconCommands.Enqueue(command);
