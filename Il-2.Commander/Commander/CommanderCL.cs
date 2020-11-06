@@ -710,7 +710,7 @@ namespace Il_2.Commander.Commander
                             if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                             {
                                 isTarget = true;
-                                KillTargetObj(ActiveTargets[i], item);
+                                //KillTargetObj(ActiveTargets[i], item);
                             }
                         }
                     }
@@ -827,11 +827,11 @@ namespace Il_2.Commander.Commander
         /// <returns></returns>
         private bool KillTargetObj(AType3 aType)
         {
-            var evMess = "AType:3 " + GetQuadForMap(aType.ZPos, aType.XPos);
-            GetLogStr(evMess, Color.DarkGoldenrod);
+            //var evMess = "AType:3 " + GetQuadForMap(aType.ZPos, aType.XPos);
+            //GetLogStr(evMess, Color.DarkGoldenrod);
             bool output = false;
             ExpertDB db = new ExpertDB();
-            var targets = db.CompTarget.Where(x => x.Enable && x.InernalWeight > x.Destroed).ToList();
+            var targets = db.CompTarget.Where(x => x.Enable).ToList();
             foreach (var item in targets)
             {
                 var Xres = aType.XPos - item.XPos;
@@ -840,15 +840,20 @@ namespace Il_2.Commander.Commander
                 double max = 0.1;
                 if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                 {
+                    bool eneble = false;
                     var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
                     var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
                     if (entON.Enable == 1)
                     {
-                        int destroy = item.Destroed + 1;
-                        targets.First(x => x.id == item.id).Destroed = destroy;
-                        db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
-                        var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
-                        GetLogStr(DestroyedMess, Color.DarkGoldenrod);
+                        if(item.InernalWeight > item.Destroed)
+                        {
+                            eneble = true;
+                            int destroy = item.Destroed + 1;
+                            targets.First(x => x.id == item.id).Destroed = destroy;
+                            db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
+                            var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
+                            GetLogStr(DestroyedMess, Color.DarkGoldenrod);
+                        }
                         var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
                         if (countMandatory < 0)
                         {
@@ -883,6 +888,7 @@ namespace Il_2.Commander.Commander
                                 RconCommands.Enqueue(sendall);
                                 RconCommands.Enqueue(sendred);
                                 RconCommands.Enqueue(sendblue);
+                                eneble = true;
                             }
                         }
                         db.SaveChanges();
@@ -895,8 +901,11 @@ namespace Il_2.Commander.Commander
                             SetAttackPoint(invcoal);
                             EnableTargetsToCoalition(invcoal);
                         }
-                        output = true;
-                        break;
+                        if(eneble)
+                        {
+                            output = true;
+                            break;
+                        }
                     }
                 }
             }
