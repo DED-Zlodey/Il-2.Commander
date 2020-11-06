@@ -227,7 +227,7 @@ namespace Il_2.Commander.Commander
                                     var pilot = online.FirstOrDefault(x => x.PlayerId == item.Pilot.LOGIN);
                                     if (pilot != null)
                                     {
-                                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, pilot.Cid);
+                                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, item.Command, pilot.Cid);
                                         RconCommands.Enqueue(sendall);
                                     }
                                     GetLogStr(item.Command, Color.DarkGreen);
@@ -245,7 +245,7 @@ namespace Il_2.Commander.Commander
                                 var pilot = online.FirstOrDefault(x => x.PlayerId == item.Pilot.LOGIN);
                                 if (pilot != null)
                                 {
-                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, item.Command, pilot.Cid);
+                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, item.Command, pilot.Cid);
                                     RconCommands.Enqueue(sendall);
                                 }
                                 pilotsList.First(x => x.LOGIN == item.Pilot.LOGIN).Cargo = 0.35;
@@ -1596,13 +1596,13 @@ namespace Il_2.Commander.Commander
                 }
                 if (!string.IsNullOrEmpty(point.Name_en))
                 {
-                    var ent = onlinePlayers.FirstOrDefault(x => x.Name == pilot.NAME);
+                    var ent = onlinePlayers.FirstOrDefault(x => x.PlayerId == pilot.LOGIN);
                     if (pilot.Cargo > 0)
                     {
                         if (ent != null)
                         {
                             var messMoment = "-=COMMANDER=- " + pilot.NAME + " Successful landing. Wait for the plane to unload (~1 min). Takeoff is prohibited.";
-                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, messMoment, ent.Cid);
                             RconCommands.Enqueue(sendall);
                         }
                         var mess = "-=COMMANDER=- " + pilot.NAME + " the plane is unloaded and you can take off." + " Supplies of food and ammunition have been replenished in the city of " + point.Name_en;
@@ -1615,7 +1615,7 @@ namespace Il_2.Commander.Commander
                         if (ent != null)
                         {
                             var messMoment = "-=COMMANDER=- " + pilot.NAME + " The plane does not contain cargo.";
-                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, messMoment, ent.Cid);
                             RconCommands.Enqueue(sendall);
                         }
                     }
@@ -1647,7 +1647,7 @@ namespace Il_2.Commander.Commander
                     if (ent != null)
                     {
                         var messMoment = "-=COMMANDER=- " + pilot.NAME + " Successful landing. Wait for the plane to load (~1 min). Takeoff is prohibited.";
-                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, messMoment, ent.Cid);
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, messMoment, ent.Cid);
                         RconCommands.Enqueue(sendall);
                     }
                     var mess = "-=COMMANDER=- " + pilot.NAME + " the plane is loaded, you can take off.";
@@ -1660,7 +1660,7 @@ namespace Il_2.Commander.Commander
                     if (ent != null)
                     {
                         var mess = "-=COMMANDER=- It is impossible to supply the cauldron from this airfield.";
-                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Client, mess, ent.Cid);
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, ent.Cid);
                         RconCommands.Enqueue(sendall);
                     }
                 }
