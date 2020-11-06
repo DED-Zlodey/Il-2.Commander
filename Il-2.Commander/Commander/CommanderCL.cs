@@ -157,7 +157,7 @@ namespace Il_2.Commander.Commander
                             var currentdt = DateTime.Now;
                             var ts = currentdt - dt;
                             var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
-                            if(ostatok <= 0)
+                            if (ostatok <= 0)
                             {
                                 ostatok = 0;
                             }
@@ -170,7 +170,7 @@ namespace Il_2.Commander.Commander
                             }
                         }
                     }
-                    if(result != null && result.Type == Rcontype.ReSetSPS)
+                    if (result != null && result.Type == Rcontype.ReSetSPS)
                     {
                         Color myRgbColor = new Color();
                         myRgbColor = Color.FromArgb(0, 166, 23);
@@ -718,7 +718,7 @@ namespace Il_2.Commander.Commander
                     {
                         reviewMapTarget = true;
                         continue;
-                    }                 
+                    }
                     for (int i = 0; i < Bridges.Count; i++)
                     {
                         var Xres = Bridges[i].XPos - item.XPos;
@@ -754,7 +754,6 @@ namespace Il_2.Commander.Commander
         }
         private void CheckDestroyTarget(AType3 aType)
         {
-            bool reviewMapTarget = false;
             if (ColumnAType12.Exists(x => x.ID == aType.TID))
             {
                 KillUnitColumn(aType);
@@ -779,24 +778,10 @@ namespace Il_2.Commander.Commander
                     }
                     if (!isBridge)
                     {
-                        if (HandlingForWH(aType))
-                        {
-                            reviewMapTarget = true;
-                        }
+                        HandlingForWH(aType);
                         CheckDisableTarget(aType);
                     }
                 }
-                else
-                {
-                    reviewMapTarget = true;
-                }
-            }
-            if (reviewMapTarget)
-            {
-                //if (messenger != null)
-                //{
-                //    messenger.SpecSend("Targets");
-                //}
             }
         }
         /// <summary>
@@ -842,9 +827,11 @@ namespace Il_2.Commander.Commander
         /// <returns></returns>
         private bool KillTargetObj(AType3 aType)
         {
+            var evMess = "AType:3 " + GetQuadForMap(aType.ZPos, aType.XPos);
+            GetLogStr(evMess, Color.DarkGoldenrod);
             bool output = false;
             ExpertDB db = new ExpertDB();
-            var targets = db.CompTarget.Where(x => x.Enable).ToList();
+            var targets = db.CompTarget.Where(x => x.Enable && x.InernalWeight > x.Destroed).ToList();
             foreach (var item in targets)
             {
                 var Xres = aType.XPos - item.XPos;
@@ -857,16 +844,13 @@ namespace Il_2.Commander.Commander
                     var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
                     if (entON.Enable == 1)
                     {
-                        if (item.InernalWeight > item.Destroed)
-                        {
-                            int destroy = item.Destroed + 1;
-                            targets.First(x => x.id == item.id).Destroed = destroy;
-                            db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
-                            var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
-                            GetLogStr(DestroyedMess, Color.DarkGoldenrod);
-                        }
+                        int destroy = item.Destroed + 1;
+                        targets.First(x => x.id == item.id).Destroed = destroy;
+                        db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
+                        var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
+                        GetLogStr(DestroyedMess, Color.DarkGoldenrod);
                         var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
-                        if(countMandatory < 0)
+                        if (countMandatory < 0)
                         {
                             countMandatory = 0;
                         }
@@ -1231,7 +1215,7 @@ namespace Il_2.Commander.Commander
         private void RestoreWareHouseInMemory(int numtarget, int coal)
         {
             ExpertDB db = new ExpertDB();
-            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList(); 
+            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
             var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
             var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
             var arrivalBP = 0.00;
@@ -2201,17 +2185,17 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var pd = db.PilotDirect.Where(x => x.Coalition == coal).ToList();
-            if(pd.Count > 0)
+            if (pd.Count > 0)
             {
                 var maxVote = pd.Max(x => x.NVote);
                 var allMaxVote = pd.Where(x => x.NVote == maxVote).ToList();
-                if(allMaxVote.Count > 0)
+                if (allMaxVote.Count > 0)
                 {
                     int index = random.Next(0, allMaxVote.Count);
                     var ent = allMaxVote[index];
-                    foreach(var item in pd)
+                    foreach (var item in pd)
                     {
-                        if(item.UserId != ent.UserId)
+                        if (item.UserId != ent.UserId)
                         {
                             db.PilotDirect.Remove(item);
                         }
