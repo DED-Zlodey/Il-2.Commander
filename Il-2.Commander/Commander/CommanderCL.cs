@@ -1028,48 +1028,51 @@ namespace Il_2.Commander.Commander
             var ent = ColumnAType12.FindLast(x => x.ID == aType.TID && !x.Destroyed);
             if (ent != null)
             {
-                var column = ActiveColumn.First(x => x.NameCol == ent.NAME);
-                column.DestroyedUnits = column.DestroyedUnits + 1;
-                ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
-                ColumnAType12.FindLast(x => x.ID == aType.TID && !x.Destroyed).Destroyed = true;
-                var column12 = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol)).ToList();
-                var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol) && x.Destroyed).ToList();
-                if (ent.Unit <= column12Dead.Count)
+                var column = ActiveColumn.FirstOrDefault(x => x.NameCol == ent.NAME);
+                if(column != null)
                 {
+                    column.DestroyedUnits = column.DestroyedUnits + 1;
+                    ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
+                    ColumnAType12.FindLast(x => x.ID == aType.TID && !x.Destroyed).Destroyed = true;
+                    var column12 = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol)).ToList();
+                    var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(column.NameCol) && x.Destroyed).ToList();
+                    if (ent.Unit <= column12Dead.Count)
+                    {
+                        if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
+                        {
+                            var pilot = pilotsList.First(x => x.PLID == aType.AID || x.PID == aType.AID);
+                            var mess = "Pilot: " + pilot.NAME + " Coalition: " + pilot.COUNTRY + " Destroyed: " + ent.TYPE;
+                            GetLogStr(mess, Color.DarkViolet);
+                        }
+                    }
                     if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
                     {
                         var pilot = pilotsList.First(x => x.PLID == aType.AID || x.PID == aType.AID);
                         var mess = "Pilot: " + pilot.NAME + " Coalition: " + pilot.COUNTRY + " Destroyed: " + ent.TYPE;
-                        GetLogStr(mess, Color.DarkViolet);
+                        GetLogStr(mess, Color.DarkGreen);
                     }
-                }
-                if (pilotsList.Exists(x => x.PLID == aType.AID || x.PID == aType.AID))
-                {
-                    var pilot = pilotsList.First(x => x.PLID == aType.AID || x.PID == aType.AID);
-                    var mess = "Pilot: " + pilot.NAME + " Coalition: " + pilot.COUNTRY + " Destroyed: " + ent.TYPE;
-                    GetLogStr(mess, Color.DarkGreen);
-                }
-                if (column.DestroyedUnits >= column.Unit)
-                {
-                    string coal = string.Empty;
-                    if (column.Coalition == 201)
+                    if (column.DestroyedUnits >= column.Unit)
                     {
-                        coal = "Axis";
+                        string coal = string.Empty;
+                        if (column.Coalition == 201)
+                        {
+                            coal = "Axis";
+                        }
+                        if (column.Coalition == 101)
+                        {
+                            coal = "Allies";
+                        }
+                        var mess = "-=COMMANDER=-: Column for warehouse: " + column.NWH + " Coalition: " + coal + " Destroyed units: " + column.DestroyedUnits;
+                        GetLogStr(mess, Color.DarkRed);
+                        RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                        RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                        RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                        RconCommands.Enqueue(sendall);
+                        RconCommands.Enqueue(sendred);
+                        RconCommands.Enqueue(sendblue);
+                        DisableColumn(column);
+                        //ActiveColumn.Remove(column);
                     }
-                    if (column.Coalition == 101)
-                    {
-                        coal = "Allies";
-                    }
-                    var mess = "-=COMMANDER=-: Column for warehouse: " + column.NWH + " Coalition: " + coal + " Destroyed units: " + column.DestroyedUnits;
-                    GetLogStr(mess, Color.DarkRed);
-                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                    RconCommands.Enqueue(sendall);
-                    RconCommands.Enqueue(sendred);
-                    RconCommands.Enqueue(sendblue);
-                    DisableColumn(column);
-                    //ActiveColumn.Remove(column);
                 }
             }
         }
