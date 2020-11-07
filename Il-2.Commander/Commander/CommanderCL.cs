@@ -854,7 +854,7 @@ namespace Il_2.Commander.Commander
                             var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
                             GetLogStr(DestroyedMess, Color.DarkGoldenrod);
                         }
-                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
+                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count;
                         if (countMandatory < 0)
                         {
                             countMandatory = 0;
