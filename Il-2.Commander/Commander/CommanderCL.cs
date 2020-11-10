@@ -1686,6 +1686,7 @@ namespace Il_2.Commander.Commander
         public void StartGeneration()
         {
             GetLogStr("Start Generation...", Color.Black);
+            messenger.SpecSend("Phase2");
             processGenerator = new Process();
             ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator);
             processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
@@ -1730,6 +1731,7 @@ namespace Il_2.Commander.Commander
             GetOfficerTime("StartTimeOfficer", Color.Black);
             messenger.SpecSend("FrontLine");
             messenger.SpecSend("Targets");
+            messenger.SpecSend("Phase1");
             SetEndMission(1);
         }
         /// <summary>
@@ -1800,6 +1802,7 @@ namespace Il_2.Commander.Commander
                 GetLogArray(content);
                 GetLogStr("Restart Mission...", Color.Black);
                 NameMission = GetNameNextMission(1);
+                messenger.SpecSend("Phase3");
                 ReWriteSDS(SetApp.Config.DirSDS);
                 NextMission(SetApp.Config.DirSDS);
             }
@@ -2187,6 +2190,7 @@ namespace Il_2.Commander.Commander
         {
             SelectUserDirect(101);
             SelectUserDirect(201);
+            RemoveVotes();
             StartGeneration();
         }
         /// <summary>
@@ -2215,6 +2219,17 @@ namespace Il_2.Commander.Commander
                     db.SaveChanges();
                 }
             }
+            db.Dispose();
+        }
+        private void RemoveVotes()
+        {
+            ExpertDB db = new ExpertDB();
+            var votes = db.VoteDirect.ToList();
+            foreach(var item in votes)
+            {
+                db.VoteDirect.Remove(item);
+            }
+            db.SaveChanges();
             db.Dispose();
         }
     }
