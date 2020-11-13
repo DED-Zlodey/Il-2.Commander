@@ -12,6 +12,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public event delShowLog LogEvents;
         private FileSystemWatcher watcher = new FileSystemWatcher();
+        private string FName = string.Empty;
 
         /// <summary>
         /// Отслеживает появление нового лог-файла
@@ -29,13 +30,21 @@ namespace Il_2.Commander.Commander
 
         private void watcher_Created(object sender, FileSystemEventArgs e)
         {
-            Thread.Sleep(1000);
-            MakeEvents(e.FullPath);
+            if (e.FullPath != FName)
+            {
+                FName = e.FullPath;
+                Thread.Sleep(1500);
+                MakeEvents(e.FullPath);
+            }
         }
         private void watcher_Changed(Object sender, FileSystemEventArgs e)
         {
-            Thread.Sleep(1000);
-            MakeEvents(e.FullPath);
+            if(e.FullPath != FName)
+            {
+                FName = e.FullPath;
+                Thread.Sleep(1500);
+                MakeEvents(e.FullPath);
+            }
         }
         private void MakeEvents(string FileName)
         {

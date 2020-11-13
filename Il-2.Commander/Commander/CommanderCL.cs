@@ -13,11 +13,13 @@ namespace Il_2.Commander.Commander
 {
     public delegate void EventLog(string Message, Color color);
     public delegate void EventLogArray(string[] array);
+    public delegate void ChangeLog();
     class CommanderCL
     {
         public event EventLog GetLogStr;
         public event EventLog GetOfficerTime;
         public event EventLogArray GetLogArray;
+        public event ChangeLog SetChangeLog;
         private static RconCommunicator rcon;
         private static Random random = new Random();
         private HubMessenger messenger;
@@ -108,6 +110,7 @@ namespace Il_2.Commander.Commander
 
         #region Регулярки
         private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
+        private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
         #endregion
 
         public CommanderCL()
@@ -418,8 +421,10 @@ namespace Il_2.Commander.Commander
                 LastFile = pathLog;
                 if (pathLog.Contains("[0].txt"))
                 {
+                    HandlingFirstLog(pathLog);
                     Form1.busy = true;
                     TriggerTime = true;
+                    SetChangeLog();
                     messDurTime = DateTime.Now;
                     SetStateWH();
                     ClearPrevMission();
@@ -433,7 +438,26 @@ namespace Il_2.Commander.Commander
                     EnableTargetsToCoalition(101);
                     EnableWareHouse();
                 }
-                ReadLogFile(pathLog);
+                else
+                {
+                    ReadLogFile(pathLog);
+                }
+            }
+        }
+        private void HandlingFirstLog(string path)
+        {
+            var str = SetApp.GetFile(path);
+            for (int i = 0; i < str.Count; i++)
+            {
+                if (str[i].Contains("AType:9 "))
+                {
+                    ReWriteAType9(str, i, str[i], path);
+                    break;
+                }
+            }
+            if(File.Exists(path))
+            {
+                File.Delete(path);
             }
         }
         /// <summary>
@@ -461,6 +485,10 @@ namespace Il_2.Commander.Commander
             {
                 messDurTime = DateTime.Now;
                 var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
+                if (ostatok < 0)
+                {
+                    ostatok = 0;
+                }
                 var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
                 RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
                 RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
@@ -628,7 +656,36 @@ namespace Il_2.Commander.Commander
             if (TriggerTime || RconCommands.Count > 0)
             {
                 Form1.busy = true;
+                SetChangeLog();
             }
+        }
+        private void ReWriteAType9(List<string> str, int i, string strA, string path)
+        {
+            List<string> fakefields = new List<string>();
+            ExpertDB db = new ExpertDB();
+            var tick = reg_tick.Match(strA).Value;
+            var rearFields = db.RearFields.ToList();
+            var allfields = db.AirFields.Where(x => x.idMap == 2).ToList();
+            List<AirFields> fields = new List<AirFields>();
+            foreach (var item in allfields)
+            {
+                if (!rearFields.Exists(x => x.IndexFiled == item.IndexCity))
+                {
+                    fields.Add(item);
+                }
+            }
+            int counter = 1;
+            foreach (var item in fields)
+            {
+                fakefields.Add("T:" + tick + " AType:9 AID:" + counter + " COUNTRY:" + item.Coalitions + " POS(" + item.XPos.ToString().Replace(",", ".") + ", " +
+                    item.YPos.ToString().Replace(",", ".") + ", " + item.ZPos.ToString().Replace(",", ".") + ") IDS()");
+                counter++;
+            }
+            str.InsertRange(i, fakefields);
+            db.Dispose();
+            FileInfo fi = new FileInfo(path);
+            var npath = SetApp.Config.DirStatLogs + fi.Name;
+            File.WriteAllLines(npath, str);
         }
         /// <summary>
         /// Инициализация состояния складов
@@ -845,13 +902,13 @@ namespace Il_2.Commander.Commander
                     var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
                     if (entON.Enable == 1)
                     {
-                        if(item.InernalWeight > item.Destroed)
+                        if (item.InernalWeight > item.Destroed)
                         {
                             eneble = true;
                             int destroy = item.Destroed + 1;
                             targets.First(x => x.id == item.id).Destroed = destroy;
                             db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
-                            var DestroyedMess = "-=COMMNDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
+                            var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
                             GetLogStr(DestroyedMess, Color.DarkGoldenrod);
                         }
                         var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
@@ -901,7 +958,7 @@ namespace Il_2.Commander.Commander
                             SetAttackPoint(invcoal);
                             EnableTargetsToCoalition(invcoal);
                         }
-                        if(eneble)
+                        if (eneble)
                         {
                             output = true;
                             break;
@@ -1029,7 +1086,7 @@ namespace Il_2.Commander.Commander
             if (ent != null)
             {
                 var column = ActiveColumn.FirstOrDefault(x => x.NameCol == ent.NAME);
-                if(column != null)
+                if (column != null)
                 {
                     column.DestroyedUnits = column.DestroyedUnits + 1;
                     ActiveColumn.First(x => x.NameCol == ent.NAME).DestroyedUnits = column.DestroyedUnits;
@@ -1116,8 +1173,6 @@ namespace Il_2.Commander.Commander
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
                         db.ColInput.First(x => x.NameCol == namecol).Active = false;
                         db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count + (int)(ent.Unit / 2);
-                        //var mess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination ";
-                        //GetLogStr(mess, Color.DarkRed);
                         ActiveColumn.Remove(ent);
                         RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
                     }
@@ -2225,7 +2280,7 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var votes = db.VoteDirect.ToList();
-            foreach(var item in votes)
+            foreach (var item in votes)
             {
                 db.VoteDirect.Remove(item);
             }

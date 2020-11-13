@@ -31,6 +31,12 @@ namespace Il_2.Commander
             commander.GetLogStr += Commander_GetLogStr;
             commander.GetOfficerTime += Commander_GetOfficerTime;
             commander.GetLogArray += Commander_GetLogArray;
+            commander.SetChangeLog += Commander_SetChangeLog;
+        }
+
+        private void Commander_SetChangeLog()
+        {
+            BeginInvoke((MethodInvoker)(() => label_status.Text = "Status True"));
         }
 
         private void Commander_GetLogArray(string[] array)
@@ -151,6 +157,7 @@ namespace Il_2.Commander
             {
                 if (CommanderCL.qLog.Count > 0)
                 {
+                    BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
                     busy = false;
                     var str = CommanderCL.qLog.Dequeue();
                     Action startgen = () =>

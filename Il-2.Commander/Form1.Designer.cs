@@ -32,6 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.TabBG = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.label_status = new System.Windows.Forms.Label();
             this.lvLog = new System.Windows.Forms.ListView();
             this.columnHeader1 = new System.Windows.Forms.ColumnHeader();
             this.btn_StartPredGen = new System.Windows.Forms.Button();
@@ -59,6 +60,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.label_status);
             this.tabPage1.Controls.Add(this.lvLog);
             this.tabPage1.Controls.Add(this.btn_StartPredGen);
             this.tabPage1.Controls.Add(this.btn_Stop);
@@ -71,6 +73,16 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Управление";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // label_status
+            // 
+            this.label_status.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label_status.AutoSize = true;
+            this.label_status.Location = new System.Drawing.Point(4, 567);
+            this.label_status.Name = "label_status";
+            this.label_status.Size = new System.Drawing.Size(64, 15);
+            this.label_status.TabIndex = 2;
+            this.label_status.Text = "Status True";
             // 
             // lvLog
             // 
@@ -140,7 +152,7 @@
             // 
             // timerOfficer
             // 
-            this.timerOfficer.Interval = 300000;
+            this.timerOfficer.Interval = 180000;
             this.timerOfficer.Tick += new System.EventHandler(this.timerOfficer_Tick);
             // 
             // timerRcon
@@ -150,7 +162,7 @@
             // 
             // timerLog
             // 
-            this.timerLog.Interval = 5000;
+            this.timerLog.Interval = 15000;
             this.timerLog.Tick += new System.EventHandler(this.timerLog_Tick);
             // 
             // Form1
@@ -166,6 +178,7 @@
             this.SizeChanged += new System.EventHandler(this.Form1_SizeChanged);
             this.TabBG.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
+            this.tabPage1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -183,6 +196,7 @@
         private System.Windows.Forms.Timer timerRcon;
         private System.Windows.Forms.ColumnHeader columnHeader1;
         private System.Windows.Forms.Timer timerLog;
+        private System.Windows.Forms.Label label_status;
     }
 }
 
