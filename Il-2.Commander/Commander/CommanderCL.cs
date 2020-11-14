@@ -1787,7 +1787,27 @@ namespace Il_2.Commander.Commander
             messenger.SpecSend("FrontLine");
             messenger.SpecSend("Targets");
             messenger.SpecSend("Phase1");
+            ClearUserDirect();
             SetEndMission(1);
+        }
+        /// <summary>
+        /// Очистка таблицы с пользовательскими направлениями атаки.
+        /// </summary>
+        private void ClearUserDirect()
+        {
+            ExpertDB db = new ExpertDB();
+            var ud = db.PilotDirect.ToList();
+            var votes = db.VoteDirect.ToList();
+            foreach(var item in ud)
+            {
+                db.PilotDirect.Remove(item);
+            }
+            foreach(var item in votes)
+            {
+                db.VoteDirect.Remove(item);
+            }
+            db.SaveChanges();
+            db.Dispose();
         }
         /// <summary>
         /// Выявляет победителя текущей миссии
