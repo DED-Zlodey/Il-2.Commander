@@ -716,9 +716,9 @@ namespace Il_2.Commander.Commander
                     bp.Remove(entBP);
                 }
             }
-            if (ActivCol.Count < 3 && allcolumn.Count > 0)
+            if (ActivCol.Count < 2 && allcolumn.Count > 0)
             {
-                int iter = 3 - ActivCol.Count;
+                int iter = 2 - ActivCol.Count;
                 for (int i = 0; i < iter; i++)
                 {
 
