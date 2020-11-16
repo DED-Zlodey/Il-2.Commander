@@ -455,7 +455,7 @@ namespace Il_2.Commander.Commander
                     break;
                 }
             }
-            if(File.Exists(path))
+            if (File.Exists(path))
             {
                 File.Delete(path);
             }
@@ -705,15 +705,21 @@ namespace Il_2.Commander.Commander
         private void StartColumn(int coal)
         {
             ExpertDB db = new ExpertDB();
-            var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
+            //var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
             var ActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
+            List<BattlePonts> localBP = new List<BattlePonts>();
+            for(int i =0; i < 5; i++)
+            {
+                localBP.Add(GetBP(i + 1, coal));
+            }
+            localBP = localBP.OrderBy(x => x.Point).ToList();
             foreach (var item in ActivCol)
             {
-                var entBP = bp.FirstOrDefault(x => x.WHID == item.NWH && x.Coalition == coal);
+                var entBP = localBP.FirstOrDefault(x => x.WHID == item.NWH && x.Coalition == coal);
                 if (entBP != null)
                 {
-                    bp.Remove(entBP);
+                    localBP.Remove(entBP);
                 }
             }
             if (ActivCol.Count < 2 && allcolumn.Count > 0)
@@ -721,8 +727,7 @@ namespace Il_2.Commander.Commander
                 int iter = 2 - ActivCol.Count;
                 for (int i = 0; i < iter; i++)
                 {
-
-                    var allwhcol = allcolumn.Where(x => x.NWH == bp[i].WHID && x.Coalition == bp[i].Coalition).ToList();
+                    var allwhcol = allcolumn.Where(x => x.NWH == localBP[i].WHID && x.Coalition == localBP[i].Coalition).ToList();
                     if (allwhcol.Count > 0)
                     {
                         int rindex = random.Next(0, allwhcol.Count);
@@ -918,36 +923,36 @@ namespace Il_2.Commander.Commander
                         }
                         var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
                         var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
-                        if (countMandatory <= countDestroyedMandatory)
+                        //if (countMandatory <= countDestroyedMandatory)
+                        //{
+                        if (item.TotalWeigth <= countDestroyed)
                         {
-                            if (item.TotalWeigth <= countDestroyed)
+                            RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                            RconCommands.Enqueue(command);
+                            var color = Color.Black;
+                            var coalstr = string.Empty;
+                            if (ent.Coalition == 201)
                             {
-                                RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
-                                RconCommands.Enqueue(command);
-                                var color = Color.Black;
-                                var coalstr = string.Empty;
-                                if (ent.Coalition == 201)
-                                {
-                                    color = Color.DarkRed;
-                                    coalstr = "Allies destroyed ";
-                                }
-                                if (ent.Coalition == 101)
-                                {
-                                    color = Color.DarkBlue;
-                                    coalstr = "Axis destroyed ";
-                                }
-                                var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
-                                GetLogStr(mess, color);
-                                db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
-                                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                                RconCommands.Enqueue(sendall);
-                                RconCommands.Enqueue(sendred);
-                                RconCommands.Enqueue(sendblue);
-                                eneble = true;
+                                color = Color.DarkRed;
+                                coalstr = "Allies destroyed ";
                             }
+                            if (ent.Coalition == 101)
+                            {
+                                color = Color.DarkBlue;
+                                coalstr = "Axis destroyed ";
+                            }
+                            var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                            GetLogStr(mess, color);
+                            db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                            RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                            RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                            RconCommands.Enqueue(sendall);
+                            RconCommands.Enqueue(sendred);
+                            RconCommands.Enqueue(sendblue);
+                            eneble = true;
                         }
+                        //}
                         db.SaveChanges();
                         var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
                         db.Dispose();
@@ -1328,6 +1333,57 @@ namespace Il_2.Commander.Commander
                 }
             }
             db.Dispose();
+        }
+        private BattlePonts GetBP(int numtarget, int coal)
+        {
+            ExpertDB db = new ExpertDB();
+            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
+            var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
+            var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
+            var arrivalBP = 0.00;
+            if (columns.Count > 0)
+            {
+                foreach (var item in columns)
+                {
+                    double koef = 1;
+                    if (item.TypeCol == (int)TypeColumn.Armour)
+                    {
+                        koef = 1.5;
+                    }
+                    if (item.TypeCol == (int)TypeColumn.Mixed)
+                    {
+                        koef = 1.2;
+                    }
+                    if (item.TypeCol == (int)TypeColumn.Transport)
+                    {
+                        koef = 1;
+                    }
+                    arrivalBP += item.ArrivalUnit * koef;
+                }
+                if (arrivalBP < damage.Count)
+                {
+                    //for (int i = 0; i < arrivalBP; i++)
+                    //{
+                    //    int rindex = random.Next(0, damage.Count);
+                    //    var ent = damage[rindex];
+                    //}
+                }
+                else
+                {
+                    foreach (var item in damage)
+                    {
+                        arrivalBP = arrivalBP - 1;
+                    }
+                    var finalBP = bp.Point + (int)arrivalBP;
+                    if (finalBP > SetApp.Config.BattlePoints)
+                    {
+                        finalBP = SetApp.Config.BattlePoints;
+                    }
+                    bp.Point = finalBP;
+                }
+            }
+            db.Dispose();
+            return bp;
         }
         private void InitDirectPoints()
         {
@@ -1798,11 +1854,11 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             var ud = db.PilotDirect.ToList();
             var votes = db.VoteDirect.ToList();
-            foreach(var item in ud)
+            foreach (var item in ud)
             {
                 db.PilotDirect.Remove(item);
             }
-            foreach(var item in votes)
+            foreach (var item in votes)
             {
                 db.VoteDirect.Remove(item);
             }
