@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Il_2.Commander.Commander
 {
@@ -377,7 +378,11 @@ namespace Il_2.Commander.Commander
             processDS.Start();
             if (watcher == null)
             {
-                StartWatcher();
+                Action startwatcher = () =>
+                {
+                    StartWatcher();
+                };
+                Task taskstartgen = Task.Factory.StartNew(startwatcher);
             }
             processDS.WaitForExit(11000);
             StartRConService();
@@ -1957,7 +1962,11 @@ namespace Il_2.Commander.Commander
             }
             if (watcher == null)
             {
-                StartWatcher();
+                Action startwatcher = () =>
+                {
+                    StartWatcher();
+                };
+                Task taskstartgen = Task.Factory.StartNew(startwatcher);
             }
         }
         /// <summary>

@@ -157,7 +157,7 @@
             // 
             // timerRcon
             // 
-            this.timerRcon.Interval = 500;
+            this.timerRcon.Interval = 700;
             this.timerRcon.Tick += new System.EventHandler(this.timerRcon_Tick);
             // 
             // timerLog
