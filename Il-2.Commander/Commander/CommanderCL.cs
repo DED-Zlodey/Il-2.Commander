@@ -92,6 +92,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private List<HandlingAirSupply> airSupplies = new List<HandlingAirSupply>();
         private List<AType12> AllLogs = new List<AType12>();
+        private List<GraphCity> UnlockCauldron = new List<GraphCity>();
         /// <summary>
         /// крайний лог-файл
         /// </summary>
@@ -100,7 +101,7 @@ namespace Il_2.Commander.Commander
         /// Имя текущей миссии.
         /// </summary>
         private string NameMission = string.Empty;
-        private bool TriggerTime = true;
+        //private bool TriggerTime = true;
         private DateTime dt = DateTime.Now;
         private DateTime messDurTime = DateTime.Now;
         private int durmess = 30;
@@ -428,7 +429,7 @@ namespace Il_2.Commander.Commander
                 {
                     HandlingFirstLog(pathLog);
                     Form1.busy = true;
-                    TriggerTime = true;
+                    Form1.TriggerTime = true;
                     SetChangeLog();
                     messDurTime = DateTime.Now;
                     SetStateWH();
@@ -469,12 +470,12 @@ namespace Il_2.Commander.Commander
         /// Чтение лог-файла, постановка его в очередь на обработку
         /// </summary>
         /// <param name="pathLog">Принимает путь до лог-файла</param>
-        private void ReadLogFile(string pathLog)
+        public void ReadLogFile(string pathLog)
         {
             var str = SetApp.GetFile(pathLog);
             if (str.Count > 1)
             {
-                if (TriggerTime)
+                if (Form1.TriggerTime)
                 {
                     qLog.Enqueue(str);
                 }
@@ -505,9 +506,9 @@ namespace Il_2.Commander.Commander
             }
             if (ts.TotalMinutes >= DurationMission)
             {
-                if (TriggerTime)
+                if (Form1.TriggerTime)
                 {
-                    TriggerTime = false;
+                    Form1.TriggerTime = false;
                     var mess = "-=COMMANDER=- MISSION END.";
                     RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
                     RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
@@ -515,13 +516,14 @@ namespace Il_2.Commander.Commander
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
                     CreateVictoryCoalition();
+                    SetUnlockKotel();
                     StartGeneration("pregen");
                 }
             }
             FileInfo fi = new FileInfo(pathLog);
             File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
             UpdateCurrentPlayers();
-            if (TriggerTime)
+            if (Form1.TriggerTime)
             {
                 StartColumn(101);
                 StartColumn(201);
@@ -658,7 +660,7 @@ namespace Il_2.Commander.Commander
                     messenger.SpecSend("Targets");
                 }
             }
-            if (TriggerTime || RconCommands.Count > 0)
+            if (Form1.TriggerTime || RconCommands.Count > 0)
             {
                 Form1.busy = true;
                 SetChangeLog();
@@ -894,8 +896,6 @@ namespace Il_2.Commander.Commander
         /// <returns></returns>
         private bool KillTargetObj(AType3 aType)
         {
-            //var evMess = "AType:3 " + GetQuadForMap(aType.ZPos, aType.XPos);
-            //GetLogStr(evMess, Color.DarkGoldenrod);
             bool output = false;
             ExpertDB db = new ExpertDB();
             var targets = db.CompTarget.Where(x => x.Enable).ToList();
@@ -1574,6 +1574,7 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var ent = db.GraphCity.First(x => x.IndexCity == city);
+            HandleUnlockKotel(ent, db);
             var victoryCoal = InvertedCoalition(ent.Coalitions);
             victories.Add(new Victory(ent, victoryCoal));
             var afields = db.AirFields.Where(x => x.IndexCity == city).ToList();
@@ -1594,6 +1595,56 @@ namespace Il_2.Commander.Commander
             foreach (var item in afields)
             {
                 db.AirFields.First(x => x.id == item.id).Coalitions = InvertedCoalition(item.Coalitions);
+            }
+            db.SaveChanges();
+            db.Dispose();
+        }
+        /// <summary>
+        /// Сохранаяет список населенных пунктов, которые в конце миссии нужно удалить из котла. Происходит из-за разблокировки котла.
+        /// </summary>
+        /// <param name="ent">Населенный пункт, который только что был захвачен</param>
+        /// <param name="db">База Данных</param>
+        private void HandleUnlockKotel(GraphCity ent, ExpertDB db)
+        {
+            var allP = db.GraphCity.ToList();
+            var array = ent.Targets.Split(',');
+            if(array.Length > 0)
+            {
+                foreach(var item in array)
+                {
+                    int index = 0;
+                    if(int.TryParse(item, out index))
+                    {
+                        var locent = allP.FirstOrDefault(x => x.IndexCity == index);
+                        if(locent != null)
+                        {
+                            if (locent.Kotel && locent.Coalitions == ent.Coalitions)
+                            {
+                                var currentKotel = allP.Where(x => x.CompLinks == locent.CompLinks).ToList();
+                                for (int i = 0; i < currentKotel.Count; i++)
+                                {
+                                    if (!UnlockCauldron.Exists(x => x.IndexCity == currentKotel[i].IndexCity))
+                                    {
+                                        UnlockCauldron.Add(currentKotel[i]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Разблокирование котла
+        /// </summary>
+        private void SetUnlockKotel()
+        {
+            ExpertDB db = new ExpertDB();
+            foreach(var item in UnlockCauldron)
+            {
+                db.GraphCity.First(x => x.IndexCity == item.IndexCity).Kotel = false;
+                db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = 0;
+                db.GraphCity.First(x => x.IndexCity == item.IndexCity).CompLinks = 0;
             }
             db.SaveChanges();
             db.Dispose();
@@ -1875,6 +1926,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private void CreateVictoryCoalition()
         {
+            CollapsedCauldron();
             var countVicRed = victories.Where(x => x.Coalition == 101).ToList().Count;
             var countVicBlue = victories.Where(x => x.Coalition == 201).ToList().Count;
             foreach (var item in victories)
@@ -1896,6 +1948,20 @@ namespace Il_2.Commander.Commander
                 RconCommand command = new RconCommand(Rcontype.Input, "Victory101");
                 RconCommands.Enqueue(command);
             }
+        }
+        /// <summary>
+        /// Добавляет в список захваченных населенный пункт который перешел под контроль в связи с положением в котле.
+        /// </summary>
+        private void CollapsedCauldron()
+        {
+            ExpertDB db = new ExpertDB();
+            var kotels = db.GraphCity.Where(x => x.Kotel && x.PointsKotel < 1).ToList();
+            foreach(var item in kotels)
+            {
+                var victoryCoal = InvertedCoalition(item.Coalitions);
+                victories.Add(new Victory(item, victoryCoal));
+            }
+            db.Dispose();
         }
         /// <summary>
         /// Вызывается после завершения генерации миссии
@@ -2046,6 +2112,10 @@ namespace Il_2.Commander.Commander
             if (AllLogs.Count > 0)
             {
                 AllLogs.Clear();
+            }
+            if(UnlockCauldron.Count > 0)
+            {
+                UnlockCauldron.Clear();
             }
         }
         /// <summary>

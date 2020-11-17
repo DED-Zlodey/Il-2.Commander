@@ -162,7 +162,7 @@
             // 
             // timerLog
             // 
-            this.timerLog.Interval = 15000;
+            this.timerLog.Interval = 5000;
             this.timerLog.Tick += new System.EventHandler(this.timerLog_Tick);
             // 
             // Form1

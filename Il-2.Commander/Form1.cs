@@ -11,6 +11,7 @@ namespace Il_2.Commander
     public partial class Form1 : Form
     {
         public static bool busy;
+        public static bool TriggerTime = true;
         private HubMessenger messenger;
         private CommanderCL commander;
         private Process processGenerator;
@@ -153,8 +154,8 @@ namespace Il_2.Commander
 
         private void timerLog_Tick(object sender, EventArgs e)
         {
-            if (busy)
-            {
+            //if (busy)
+            //{
                 if (CommanderCL.qLog.Count > 0)
                 {
                     BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
@@ -166,7 +167,7 @@ namespace Il_2.Commander
                     };
                     Task taskstartgen = Task.Factory.StartNew(startgen);
                 }
-            }
+            //}
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
