@@ -138,12 +138,12 @@ namespace Il_2.Commander
             btn_StartPredGen.Enabled = true;
             Action StopCommander = () =>
             {
-                commander.Start();
+                commander.Stop();
             };
             Task TasksStopCommander = Task.Factory.StartNew(StopCommander);
             Action StopHandlerLog = () =>
             {
-                HandlerLogs.Start();
+                HandlerLogs.Stop();
             };
             Task TasksStopHandlerLogs = Task.Factory.StartNew(StopHandlerLog);
         }

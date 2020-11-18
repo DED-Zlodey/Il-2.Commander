@@ -101,8 +101,15 @@ namespace Il_2.Commander.Commander
         private int durmess = 30;
         private int DurationMission = 235; // Длительность миссии в минутах
         bool qrcon = true;
+        /// <summary>
+        /// Список пилотов
+        /// </summary>
         private List<AType10> pilotsList = new List<AType10>();
+        /// <summary>
+        /// Список пилотов онлайн
+        /// </summary>
         private List<Player> onlinePlayers = new List<Player>();
+        private string GameDate = string.Empty;
 
         #region Регулярки
         private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
@@ -337,6 +344,8 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             var maxTour = db.PreSetupMap.Where(x => x.idServ == srv).Max(x => x.idTour);
             var actualMissId = db.PreSetupMap.Where(x => x.idServ == srv && x.idMap == 2 && x.Played == false).Min(x => x.id);
+            var ent = db.PreSetupMap.First(x => x.id == actualMissId);
+            GameDate = ent.GameDate;
             var output = db.PreSetupMap.First(x => x.id == actualMissId).NameMiss;
             db.Dispose();
             return output;
@@ -408,6 +417,7 @@ namespace Il_2.Commander.Commander
             ClearPrevMission();
             dt = DateTime.Now;
             GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
+            GetLogStr("Game date: " + GameDate, Color.DarkCyan);
             SetDurationMission(1);
             SavedMissionTimeStart();
             InitDirectPoints();
