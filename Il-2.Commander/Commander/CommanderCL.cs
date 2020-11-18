@@ -1695,7 +1695,7 @@ namespace Il_2.Commander.Commander
         private void CollapsedCauldron()
         {
             ExpertDB db = new ExpertDB();
-            var kotels = db.GraphCity.Where(x => x.Kotel && x.PointsKotel < 1).ToList();
+            var kotels = db.GraphCity.Where(x => x.Kotel && x.PointsKotel <= 1).ToList();
             foreach (var item in kotels)
             {
                 var victoryCoal = InvertedCoalition(item.Coalitions);
