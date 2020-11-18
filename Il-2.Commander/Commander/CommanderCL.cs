@@ -160,9 +160,9 @@ namespace Il_2.Commander.Commander
                         var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
                         if (player != null)
                         {
-                            var currentdt = DateTime.Now;
-                            var ts = currentdt - dt;
-                            var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
+                            var playerdt = DateTime.Now;
+                            var playerts = playerdt - dt;
+                            var ostatok = Math.Round(DurationMission - playerts.TotalMinutes, 0);
                             if (ostatok <= 0)
                             {
                                 ostatok = 0;
