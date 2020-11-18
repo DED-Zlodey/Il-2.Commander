@@ -268,6 +268,42 @@ namespace Il_2.Commander.Commander
                 db.Dispose();
                 qrcon = true;
             }
+            var currentdt = DateTime.Now;
+            var curmissend = currentdt - messDurTime;
+            var ts = currentdt - dt;
+            if (curmissend.TotalMinutes >= durmess)
+            {
+                messDurTime = DateTime.Now;
+                var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
+                if (ostatok < 0)
+                {
+                    ostatok = 0;
+                }
+                var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+                GetLogStr(mess, Color.Black);
+            }
+            if (ts.TotalMinutes >= DurationMission)
+            {
+                if (Form1.TriggerTime)
+                {
+                    Form1.TriggerTime = false;
+                    var mess = "-=COMMANDER=- MISSION END.";
+                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                    GetLogStr(mess, Color.Red);
+                    RconCommands.Enqueue(sendred);
+                    RconCommands.Enqueue(sendblue);
+                    CreateVictoryCoalition();
+                    SetUnlockKotel();
+                    StartGeneration("pregen");
+                }
+            }
         }
         /// <summary>
         /// Приведение базы данных в исходное, стартовое положение. Все инпуты и прочее приводятся в положение "ВЫКЛ"
@@ -432,43 +468,7 @@ namespace Il_2.Commander.Commander
         /// Вызывается при приходе каждого лога?
         /// </summary>
         public void CheckEveryLog()
-        {
-            var currentdt = DateTime.Now;
-            var curmissend = currentdt - messDurTime;
-            var ts = currentdt - dt;
-            if (curmissend.TotalMinutes >= durmess)
-            {
-                messDurTime = DateTime.Now;
-                var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
-                if (ostatok < 0)
-                {
-                    ostatok = 0;
-                }
-                var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
-                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                RconCommands.Enqueue(sendall);
-                RconCommands.Enqueue(sendred);
-                RconCommands.Enqueue(sendblue);
-                GetLogStr(mess, Color.Black);
-            }
-            if (ts.TotalMinutes >= DurationMission)
-            {
-                if (Form1.TriggerTime)
-                {
-                    Form1.TriggerTime = false;
-                    var mess = "-=COMMANDER=- MISSION END.";
-                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                    GetLogStr(mess, Color.Red);
-                    RconCommands.Enqueue(sendred);
-                    RconCommands.Enqueue(sendblue);
-                    CreateVictoryCoalition();
-                    SetUnlockKotel();
-                    StartGeneration("pregen");
-                }
-            }
+        {           
             UpdateCurrentPlayers();
             if (Form1.TriggerTime)
             {
