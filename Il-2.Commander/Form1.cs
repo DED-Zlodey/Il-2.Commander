@@ -15,6 +15,7 @@ namespace Il_2.Commander
         private HubMessenger messenger;
         private CommanderCL commander;
         private Process processGenerator;
+        private HandlerLogs HandlerLogs;
         public Form1()
         {
             InitializeComponent();
@@ -33,6 +34,20 @@ namespace Il_2.Commander
             commander.GetOfficerTime += Commander_GetOfficerTime;
             commander.GetLogArray += Commander_GetLogArray;
             commander.SetChangeLog += Commander_SetChangeLog;
+            HandlerLogs = new HandlerLogs();
+            HandlerLogs.EvLog += HandlerLogs_EvLog;
+        }
+
+        private void HandlerLogs_EvLog(int e)
+        {
+            if (e == 1)
+            {
+                Action strtfirstlog = () =>
+                {
+                    commander.StartMission();
+                };
+                Task taskstartgen = Task.Factory.StartNew(strtfirstlog);
+            }
         }
 
         private void Commander_SetChangeLog()
@@ -103,12 +118,16 @@ namespace Il_2.Commander
             btn_StartGen.Enabled = false;
             btn_StartPredGen.Enabled = false;
             timerRcon.Start();
-            timerLog.Start();
-            Action startgen = () =>
+            Action StartCommander = () =>
             {
                 commander.Start();
             };
-            Task taskstartgen = Task.Factory.StartNew(startgen);
+            Task TasksStartCommander = Task.Factory.StartNew(StartCommander);
+            Action StartHandlerLog = () =>
+            {
+                HandlerLogs.Start();
+            };
+            Task TasksStartHandlerLogs = Task.Factory.StartNew(StartHandlerLog);
         }
 
         private void btn_Stop_Click(object sender, EventArgs e)
@@ -117,11 +136,16 @@ namespace Il_2.Commander
             btn_Start.Enabled = true;
             btn_StartGen.Enabled = true;
             btn_StartPredGen.Enabled = true;
-            Action startgen = () =>
+            Action StopCommander = () =>
             {
-                commander.Stop();
+                commander.Start();
             };
-            Task taskstartgen = Task.Factory.StartNew(startgen);
+            Task TasksStopCommander = Task.Factory.StartNew(StopCommander);
+            Action StopHandlerLog = () =>
+            {
+                HandlerLogs.Start();
+            };
+            Task TasksStopHandlerLogs = Task.Factory.StartNew(StopHandlerLog);
         }
 
         private void btn_StartPredGen_Click(object sender, EventArgs e)
@@ -145,29 +169,25 @@ namespace Il_2.Commander
 
         private void timerRcon_Tick(object sender, EventArgs e)
         {
-            Action startgen = () =>
+            if (busy && HandlerLogs.qLog.Count > 0)
             {
-                commander.SendRconCommand();
-            };
-            Task taskstartgen = Task.Factory.StartNew(startgen);
-        }
-
-        private void timerLog_Tick(object sender, EventArgs e)
-        {
-            //if (busy)
-            //{
-                if (CommanderCL.qLog.Count > 0)
+                BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
+                busy = false;
+                var str = HandlerLogs.qLog.Dequeue();
+                Action startgen = () =>
                 {
-                    BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
-                    busy = false;
-                    var str = CommanderCL.qLog.Dequeue();
-                    Action startgen = () =>
-                    {
-                        commander.HandleLogFile(str);
-                    };
-                    Task taskstartgen = Task.Factory.StartNew(startgen);
-                }
-            //}
+                    commander.HandleLogFile(str);
+                };
+                Task taskstartgen = Task.Factory.StartNew(startgen);
+            }
+            else
+            {
+                Action startgen = () =>
+                {
+                    commander.SendRconCommand();
+                };
+                Task taskstartgen = Task.Factory.StartNew(startgen);
+            }
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)

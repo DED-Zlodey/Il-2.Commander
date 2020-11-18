@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Il_2.Commander.Commander
 {
@@ -25,7 +24,6 @@ namespace Il_2.Commander.Commander
         private static Random random = new Random();
         private HubMessenger messenger;
         private Process processGenerator;
-        private Watcher watcher;
         private Process processDS;
         /// <summary>
         /// Очередь Ркон комманд
@@ -51,10 +49,6 @@ namespace Il_2.Commander.Commander
         /// Текущая точка атаки синих
         /// </summary>
         private DStrikeBlue currentBluePoint;
-        /// <summary>
-        /// Очередь из лог-файлов
-        /// </summary>
-        public static Queue<List<string>> qLog = new Queue<List<string>>();
         /// <summary>
         /// Список инпутов мостов
         /// </summary>
@@ -112,7 +106,7 @@ namespace Il_2.Commander.Commander
 
         #region Регулярки
         private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
-        private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
+        //private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
         #endregion
 
         public CommanderCL()
@@ -377,14 +371,14 @@ namespace Il_2.Commander.Commander
             processStartInfo.WorkingDirectory = SetApp.Config.DServerWorkingDirectory;
             processDS.StartInfo = processStartInfo;
             processDS.Start();
-            if (watcher == null)
-            {
-                Action startwatcher = () =>
-                {
-                    StartWatcher();
-                };
-                Task taskstartgen = Task.Factory.StartNew(startwatcher);
-            }
+            //if (watcher == null)
+            //{
+            //    Action startwatcher = () =>
+            //    {
+            //        StartWatcher();
+            //    };
+            //    Task taskstartgen = Task.Factory.StartNew(startwatcher);
+            //}
             processDS.WaitForExit(11000);
             StartRConService();
         }
@@ -402,88 +396,31 @@ namespace Il_2.Commander.Commander
             }
         }
         /// <summary>
-        /// Старт мониторинга папки с логами
+        /// Старт миссии
         /// </summary>
-        private void StartWatcher()
+        public void StartMission()
         {
-            if (watcher == null)
-            {
-                watcher = new Watcher(SetApp.Config.DirLogs);
-                watcher.LogEvents += Watcher_Events;
-            }
-            else
-            {
-                watcher.LogEvents += Watcher_Events;
-            }
+            Form1.busy = true;
+            Form1.TriggerTime = true;
+            SetChangeLog();
+            messDurTime = DateTime.Now;
+            SetStateWH();
+            ClearPrevMission();
+            dt = DateTime.Now;
+            GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
+            SetDurationMission(1);
+            SavedMissionTimeStart();
+            InitDirectPoints();
+            SetAttackPoint();
+            EnableTargetsToCoalition(201);
+            EnableTargetsToCoalition(101);
+            EnableWareHouse();
         }
         /// <summary>
-        /// Вызывается при возникновении события LogEvents.
+        /// Вызывается при приходе каждого лога?
         /// </summary>
-        /// <param name="pathLog">Принимает путь до лог-файла</param>
-        private void Watcher_Events(string pathLog)
+        public void CheckEveryLog()
         {
-            if (pathLog != LastFile)
-            {
-                LastFile = pathLog;
-                if (pathLog.Contains("[0].txt"))
-                {
-                    HandlingFirstLog(pathLog);
-                    Form1.busy = true;
-                    Form1.TriggerTime = true;
-                    SetChangeLog();
-                    messDurTime = DateTime.Now;
-                    SetStateWH();
-                    ClearPrevMission();
-                    dt = DateTime.Now;
-                    GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
-                    SetDurationMission(1);
-                    SavedMissionTimeStart();
-                    InitDirectPoints();
-                    SetAttackPoint();
-                    EnableTargetsToCoalition(201);
-                    EnableTargetsToCoalition(101);
-                    EnableWareHouse();
-                }
-                else
-                {
-                    ReadLogFile(pathLog);
-                }
-            }
-        }
-        private void HandlingFirstLog(string path)
-        {
-            var str = SetApp.GetFile(path);
-            for (int i = 0; i < str.Count; i++)
-            {
-                if (str[i].Contains("AType:9 "))
-                {
-                    ReWriteAType9(str, i, str[i], path);
-                    break;
-                }
-            }
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-        /// <summary>
-        /// Чтение лог-файла, постановка его в очередь на обработку
-        /// </summary>
-        /// <param name="pathLog">Принимает путь до лог-файла</param>
-        public void ReadLogFile(string pathLog)
-        {
-            var str = SetApp.GetFile(pathLog);
-            if (str.Count > 1)
-            {
-                if (Form1.TriggerTime)
-                {
-                    qLog.Enqueue(str);
-                }
-                else
-                {
-                    SetVictoryLog(str, pathLog);
-                }
-            }
             var currentdt = DateTime.Now;
             var curmissend = currentdt - messDurTime;
             var ts = currentdt - dt;
@@ -520,8 +457,6 @@ namespace Il_2.Commander.Commander
                     StartGeneration("pregen");
                 }
             }
-            FileInfo fi = new FileInfo(pathLog);
-            File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
             UpdateCurrentPlayers();
             if (Form1.TriggerTime)
             {
@@ -651,8 +586,6 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            //RconCommand resetSDS = new RconCommand(Rcontype.ReSetSPS);
-            //RconCommands.Enqueue(resetSDS);
             if (updateTarget)
             {
                 if (messenger != null)
@@ -660,39 +593,12 @@ namespace Il_2.Commander.Commander
                     messenger.SpecSend("Targets");
                 }
             }
+            CheckEveryLog();
             if (Form1.TriggerTime || RconCommands.Count > 0)
             {
                 Form1.busy = true;
                 SetChangeLog();
             }
-        }
-        private void ReWriteAType9(List<string> str, int i, string strA, string path)
-        {
-            List<string> fakefields = new List<string>();
-            ExpertDB db = new ExpertDB();
-            var tick = reg_tick.Match(strA).Value;
-            var rearFields = db.RearFields.ToList();
-            var allfields = db.AirFields.Where(x => x.idMap == 2).ToList();
-            List<AirFields> fields = new List<AirFields>();
-            foreach (var item in allfields)
-            {
-                if (!rearFields.Exists(x => x.IndexFiled == item.IndexCity))
-                {
-                    fields.Add(item);
-                }
-            }
-            int counter = 1;
-            foreach (var item in fields)
-            {
-                fakefields.Add("T:" + tick + " AType:9 AID:" + counter + " COUNTRY:" + item.Coalitions + " POS(" + item.XPos.ToString().Replace(",", ".") + ", " +
-                    item.YPos.ToString().Replace(",", ".") + ", " + item.ZPos.ToString().Replace(",", ".") + ") IDS()");
-                counter++;
-            }
-            str.InsertRange(i, fakefields);
-            db.Dispose();
-            FileInfo fi = new FileInfo(path);
-            var npath = SetApp.Config.DirStatLogs + fi.Name;
-            File.WriteAllLines(npath, str);
         }
         /// <summary>
         /// Инициализация состояния складов
@@ -716,7 +622,7 @@ namespace Il_2.Commander.Commander
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
             var ActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
             List<BattlePonts> localBP = new List<BattlePonts>();
-            for(int i =0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 localBP.Add(GetBP(i + 1, coal));
             }
@@ -752,75 +658,9 @@ namespace Il_2.Commander.Commander
             db.Dispose();
         }
         /// <summary>
-        /// Обработка всех киллов в списке
+        /// Обработка одного килла
         /// </summary>
-        /// <param name="atype3">Список объектов AType:3</param>
-        private void CheckDestroyTarget(List<AType3> atype3)
-        {
-            bool reviewMapTarget = false;
-            foreach (var item in atype3)
-            {
-                if (ColumnAType12.Exists(x => x.ID == item.TID))
-                {
-                    KillUnitColumn(item);
-                }
-                else
-                {
-                    bool isTarget = false;
-                    bool isBridge = false;
-                    for (int i = 0; i < ActiveTargets.Count; i++)
-                    {
-                        if (ActiveTargets[i].GroupInput != 8)
-                        {
-                            var Xres = item.XPos - ActiveTargets[i].XPos;
-                            var Zres = item.ZPos - ActiveTargets[i].ZPos;
-                            double min = -0.1;
-                            double max = 0.1;
-                            if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
-                            {
-                                isTarget = true;
-                                //KillTargetObj(ActiveTargets[i], item);
-                            }
-                        }
-                    }
-                    if (isTarget)
-                    {
-                        reviewMapTarget = true;
-                        continue;
-                    }
-                    for (int i = 0; i < Bridges.Count; i++)
-                    {
-                        var Xres = Bridges[i].XPos - item.XPos;
-                        var Zres = Bridges[i].ZPos - item.ZPos;
-                        double min = -0.1;
-                        double max = 0.1;
-                        if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
-                        {
-                            isBridge = true;
-                            KillBridge(Bridges[i]);
-                            break;
-                        }
-                    }
-                    if (isBridge)
-                    {
-                        continue;
-                    }
-                    if (HandlingForWH(item))
-                    {
-                        reviewMapTarget = true;
-                        continue;
-                    }
-                    CheckDisableTarget(item);
-                }
-            }
-            if (reviewMapTarget)
-            {
-                if (messenger != null)
-                {
-                    messenger.SpecSend("Targets");
-                }
-            }
-        }
+        /// <param name="aType">Событие Атайп3</param>
         private void CheckDestroyTarget(AType3 aType)
         {
             if (ColumnAType12.Exists(x => x.ID == aType.TID))
@@ -928,36 +768,36 @@ namespace Il_2.Commander.Commander
                         }
                         var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
                         var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
-                        //if (countMandatory <= countDestroyedMandatory)
-                        //{
-                        if (item.TotalWeigth <= countDestroyed)
+                        if (countMandatory <= countDestroyedMandatory)
                         {
-                            RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
-                            RconCommands.Enqueue(command);
-                            var color = Color.Black;
-                            var coalstr = string.Empty;
-                            if (ent.Coalition == 201)
+                            if (item.TotalWeigth <= countDestroyed)
                             {
-                                color = Color.DarkRed;
-                                coalstr = "Allies destroyed ";
+                                RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                                RconCommands.Enqueue(command);
+                                var color = Color.Black;
+                                var coalstr = string.Empty;
+                                if (ent.Coalition == 201)
+                                {
+                                    color = Color.DarkRed;
+                                    coalstr = "Allies destroyed ";
+                                }
+                                if (ent.Coalition == 101)
+                                {
+                                    color = Color.DarkBlue;
+                                    coalstr = "Axis destroyed ";
+                                }
+                                var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                                GetLogStr(mess, color);
+                                db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                                RconCommands.Enqueue(sendall);
+                                RconCommands.Enqueue(sendred);
+                                RconCommands.Enqueue(sendblue);
+                                eneble = true;
                             }
-                            if (ent.Coalition == 101)
-                            {
-                                color = Color.DarkBlue;
-                                coalstr = "Axis destroyed ";
-                            }
-                            var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
-                            GetLogStr(mess, color);
-                            db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
-                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                            RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                            RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                            RconCommands.Enqueue(sendall);
-                            RconCommands.Enqueue(sendred);
-                            RconCommands.Enqueue(sendblue);
-                            eneble = true;
                         }
-                        //}
                         db.SaveChanges();
                         var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
                         db.Dispose();
@@ -981,74 +821,6 @@ namespace Il_2.Commander.Commander
                 db.Dispose();
             }
             return output;
-        }
-        /// <summary>
-        /// Уничтожение объекта внутри цели. А так же проверка уничтожена ли цель целиком. Если уничтожена цель выключается.
-        /// </summary>
-        /// <param name="target">Объект цели</param>
-        private void KillTargetObj(CompTarget target, AType3 aType)
-        {
-            ExpertDB db = new ExpertDB();
-            var ent = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
-            var entON = db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
-            if (entON.Enable == 1)
-            {
-                var activeTarget = db.CompTarget.FirstOrDefault(x => x.ZPos == target.ZPos && x.XPos == target.XPos && x.InernalWeight > x.Destroed);
-                if (activeTarget != null)
-                {
-                    if (activeTarget.InernalWeight > activeTarget.Destroed)
-                    {
-                        ActiveTargets.First(x => x.id == activeTarget.id && x.ZPos == activeTarget.ZPos && x.XPos == activeTarget.XPos).Destroed = activeTarget.Destroed + 1;
-                        db.CompTarget.First(x => x.id == activeTarget.id && x.ZPos == activeTarget.ZPos && x.XPos == activeTarget.XPos).Destroed = activeTarget.Destroed + 1;
-                    }
-                    var countMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).ToList().Count;
-                    var countDestroyedMandatory = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Mandatory).Sum(x => x.Destroed);
-                    var countDestroyed = ActiveTargets.Where(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex).Sum(x => x.Destroed);
-                    if (countMandatory <= countDestroyedMandatory)
-                    {
-                        if (target.TotalWeigth <= countDestroyed)
-                        {
-                            RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
-                            RconCommands.Enqueue(command);
-                            var color = Color.Black;
-                            var coalstr = string.Empty;
-                            if (ent.Coalition == 201)
-                            {
-                                color = Color.DarkBlue;
-                                coalstr = "Allies destroyed ";
-                            }
-                            if (ent.Coalition == 101)
-                            {
-                                color = Color.DarkRed;
-                                coalstr = "Axis destroyed ";
-                            }
-                            var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
-                            GetLogStr(mess, color);
-                            db.ServerInputs.First(x => x.IndexPoint == target.IndexPoint && x.SubIndex == target.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
-                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                            RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                            RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                            RconCommands.Enqueue(sendall);
-                            RconCommands.Enqueue(sendred);
-                            RconCommands.Enqueue(sendblue);
-                        }
-                    }
-                    db.SaveChanges();
-                    var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
-                    db.Dispose();
-                    if (alltargets.Count == 0)
-                    {
-                        int invcoal = InvertedCoalition(ent.Coalition);
-                        ChangeCoalitionPoint(ent.IndexPoint);
-                        SetAttackPoint(invcoal);
-                        EnableTargetsToCoalition(invcoal);
-                    }
-                }
-            }
-            else
-            {
-                db.Dispose();
-            }
         }
         /// <summary>
         /// Уничтожение моста. Остановка колонны перед мостом, а так же включение запрета на отправку данной колонны
@@ -1608,15 +1380,15 @@ namespace Il_2.Commander.Commander
         {
             var allP = db.GraphCity.ToList();
             var array = ent.Targets.Split(',');
-            if(array.Length > 0)
+            if (array.Length > 0)
             {
-                foreach(var item in array)
+                foreach (var item in array)
                 {
                     int index = 0;
-                    if(int.TryParse(item, out index))
+                    if (int.TryParse(item, out index))
                     {
                         var locent = allP.FirstOrDefault(x => x.IndexCity == index);
-                        if(locent != null)
+                        if (locent != null)
                         {
                             if (locent.Kotel && locent.Coalitions == ent.Coalitions)
                             {
@@ -1640,7 +1412,7 @@ namespace Il_2.Commander.Commander
         private void SetUnlockKotel()
         {
             ExpertDB db = new ExpertDB();
-            foreach(var item in UnlockCauldron)
+            foreach (var item in UnlockCauldron)
             {
                 db.GraphCity.First(x => x.IndexCity == item.IndexCity).Kotel = false;
                 db.GraphCity.First(x => x.IndexCity == item.IndexCity).PointsKotel = 0;
@@ -1689,48 +1461,6 @@ namespace Il_2.Commander.Commander
             db.SaveChanges();
             db.Dispose();
             messenger.SpecSend("Timer");
-        }
-        /// <summary>
-        /// Включает иконки разведки
-        /// </summary>
-        /// <param name="type6">AType:6 объект</param>
-        /// <param name="type10">AType:10 объект</param>
-        private void EnableRecon(AType6 type6, AType10 type10)
-        {
-            ExpertDB db = new ExpertDB();
-            var allrecon = db.ServerInputs.Where(x => x.Name.Contains("Recon_") && x.Coalition != type10.COUNTRY && x.Enable == 0).ToList();
-            for (int i = 0; i < allrecon.Count; i++)
-            {
-                var dist = SetApp.GetDistance(type6.ZPos, type6.XPos, allrecon[i].ZPos, allrecon[i].XPos);
-                if (dist <= 3000 && !LRecon.Exists(x => x.Name.Equals(allrecon[i].Name)))
-                {
-                    RconCommand wrap = new RconCommand(Rcontype.Input, allrecon[i].Name);
-                    RconCommands.Enqueue(wrap);
-                    LRecon.Add(allrecon[i]);
-                    var ereconname = allrecon[i].Name;
-                    db.ServerInputs.First(x => x.Name.Equals(ereconname)).Enable = 1;
-                }
-            }
-            db.SaveChanges();
-            db.Dispose();
-        }
-        /// <summary>
-        /// Включает все точки разведки.
-        /// </summary>
-        private void EnableRecon()
-        {
-            ExpertDB db = new ExpertDB();
-            var allrecon = db.ServerInputs.Where(x => x.Name.Contains("Recon_") && x.Enable == 0).ToList();
-            for (int i = 0; i < allrecon.Count; i++)
-            {
-                RconCommand wrap = new RconCommand(Rcontype.Input, allrecon[i].Name);
-                RconCommands.Enqueue(wrap);
-                LRecon.Add(allrecon[i]);
-                var ereconname = allrecon[i].Name;
-                db.ServerInputs.First(x => x.Name.Equals(ereconname)).Enable = 1;
-            }
-            db.SaveChanges();
-            db.Dispose();
         }
         /// <summary>
         /// Снабжение котлов
@@ -1956,7 +1686,7 @@ namespace Il_2.Commander.Commander
         {
             ExpertDB db = new ExpertDB();
             var kotels = db.GraphCity.Where(x => x.Kotel && x.PointsKotel < 1).ToList();
-            foreach(var item in kotels)
+            foreach (var item in kotels)
             {
                 var victoryCoal = InvertedCoalition(item.Coalitions);
                 victories.Add(new Victory(item, victoryCoal));
@@ -2026,35 +1756,14 @@ namespace Il_2.Commander.Commander
             {
                 rcon.OpenSDS(nameFSDS);
             }
-            if (watcher == null)
-            {
-                Action startwatcher = () =>
-                {
-                    StartWatcher();
-                };
-                Task taskstartgen = Task.Factory.StartNew(startwatcher);
-            }
-        }
-        /// <summary>
-        /// Подмена информации SecondaryTask на PrimaryTask в лог файле. Для отправки победы в стату Ваала
-        /// </summary>
-        /// <param name="str">Получает лог-файл списком строк</param>
-        /// <param name="path">Получает путь к лог-файлу для его перезаписи</param>
-        private void SetVictoryLog(List<string> str, string path)
-        {
-            for (int i = 0; i < str.Count; i++)
-            {
-                if (str[i].Contains("AType:8 "))
-                {
-                    var aType = new AType8(str[i]);
-                    if (aType.ICTYPE == -1 && aType.TYPE == 1)
-                    {
-                        str[i] = str[i].Replace("TYPE:1", "TYPE:0");
-                        File.WriteAllLines(path, str);
-                        break;
-                    }
-                }
-            }
+            //if (watcher == null)
+            //{
+            //    Action startwatcher = () =>
+            //    {
+            //        StartWatcher();
+            //    };
+            //    Task taskstartgen = Task.Factory.StartNew(startwatcher);
+            //}
         }
         /// <summary>
         /// Очищает все данные оставшиеся от предыдущей миссии
@@ -2069,9 +1778,9 @@ namespace Il_2.Commander.Commander
             {
                 blueQ.Clear();
             }
-            if (qLog.Count > 0)
+            if (HandlerLogs.qLog.Count > 0)
             {
-                qLog.Clear();
+                HandlerLogs.qLog.Clear();
             }
             if (ActiveColumn.Count > 0)
             {
@@ -2113,7 +1822,7 @@ namespace Il_2.Commander.Commander
             {
                 AllLogs.Clear();
             }
-            if(UnlockCauldron.Count > 0)
+            if (UnlockCauldron.Count > 0)
             {
                 UnlockCauldron.Clear();
             }
@@ -2301,10 +2010,10 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void Stop()
         {
-            if (watcher != null)
-            {
-                watcher.LogEvents -= Watcher_Events;
-            }
+            //if (watcher != null)
+            //{
+            //    watcher.LogEvents -= Watcher_Events;
+            //}
             ClearPrevMission();
             if (rcon != null)
             {
@@ -2431,6 +2140,9 @@ namespace Il_2.Commander.Commander
             }
             db.Dispose();
         }
+        /// <summary>
+        /// Очистка всех голосов за направление атаки перед фазой планирования
+        /// </summary>
         private void RemoveVotes()
         {
             ExpertDB db = new ExpertDB();

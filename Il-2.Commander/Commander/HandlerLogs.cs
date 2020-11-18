@@ -55,7 +55,10 @@ namespace Il_2.Commander.Commander
                 watcher.LogEvents += Watcher_Events;
             }
         }
-
+        /// <summary>
+        /// Вызывается при возникновении события LogEvents.
+        /// </summary>
+        /// <param name="pathLog">Принимает путь до лог-файла</param>
         private void Watcher_Events(string pathLog)
         {
             if (pathLog != LastFile)
@@ -65,6 +68,10 @@ namespace Il_2.Commander.Commander
                 {
                     HandlingFirstLog(pathLog);
                     EvLog(1);
+                }
+                else
+                {
+                    ReadLogFile(pathLog);
                 }
             }
         }
@@ -112,7 +119,7 @@ namespace Il_2.Commander.Commander
             var npath = SetApp.Config.DirStatLogs + fi.Name;
             File.WriteAllLines(npath, str);
         }
-         /// <summary>
+        /// <summary>
         /// Чтение лог-файла, постановка его в очередь на обработку
         /// </summary>
         /// <param name="pathLog">Принимает путь до лог-файла</param>
@@ -130,49 +137,8 @@ namespace Il_2.Commander.Commander
                     SetVictoryLog(str, pathLog);
                 }
             }
-            //var currentdt = DateTime.Now;
-            //var curmissend = currentdt - messDurTime;
-            //var ts = currentdt - dt;
-            //if (curmissend.TotalMinutes >= durmess)
-            //{
-            //    messDurTime = DateTime.Now;
-            //    var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
-            //    if (ostatok < 0)
-            //    {
-            //        ostatok = 0;
-            //    }
-            //    var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
-            //    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-            //    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-            //    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-            //    RconCommands.Enqueue(sendall);
-            //    RconCommands.Enqueue(sendred);
-            //    RconCommands.Enqueue(sendblue);
-            //    GetLogStr(mess, Color.Black);
-            //}
-            //if (ts.TotalMinutes >= DurationMission)
-            //{
-            //    if (TriggerTime)
-            //    {
-            //        TriggerTime = false;
-            //        var mess = "-=COMMANDER=- MISSION END.";
-            //        RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-            //        RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-            //        GetLogStr(mess, Color.Red);
-            //        RconCommands.Enqueue(sendred);
-            //        RconCommands.Enqueue(sendblue);
-            //        CreateVictoryCoalition();
-            //        StartGeneration("pregen");
-            //    }
-            //}
             FileInfo fi = new FileInfo(pathLog);
             File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
-            //UpdateCurrentPlayers();
-            //if (TriggerTime)
-            //{
-            //    StartColumn(101);
-            //    StartColumn(201);
-            //}
         }
         /// <summary>
         /// Подмена информации SecondaryTask на PrimaryTask в лог файле. Для отправки победы в стату Ваала
@@ -193,6 +159,16 @@ namespace Il_2.Commander.Commander
                         break;
                     }
                 }
+            }
+        }
+        /// <summary>
+        /// Отменяет подписку на событие отслеживания логов
+        /// </summary>
+        public void Stop()
+        {
+            if (watcher != null)
+            {
+                watcher.LogEvents -= Watcher_Events;
             }
         }
     }

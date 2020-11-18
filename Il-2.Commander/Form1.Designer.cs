@@ -41,7 +41,6 @@
             this.btn_StartGen = new System.Windows.Forms.Button();
             this.timerOfficer = new System.Windows.Forms.Timer(this.components);
             this.timerRcon = new System.Windows.Forms.Timer(this.components);
-            this.timerLog = new System.Windows.Forms.Timer(this.components);
             this.TabBG.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.SuspendLayout();
@@ -160,11 +159,6 @@
             this.timerRcon.Interval = 700;
             this.timerRcon.Tick += new System.EventHandler(this.timerRcon_Tick);
             // 
-            // timerLog
-            // 
-            this.timerLog.Interval = 5000;
-            this.timerLog.Tick += new System.EventHandler(this.timerLog_Tick);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -195,7 +189,6 @@
         private System.Windows.Forms.ListView lvLog;
         private System.Windows.Forms.Timer timerRcon;
         private System.Windows.Forms.ColumnHeader columnHeader1;
-        private System.Windows.Forms.Timer timerLog;
         private System.Windows.Forms.Label label_status;
     }
 }
