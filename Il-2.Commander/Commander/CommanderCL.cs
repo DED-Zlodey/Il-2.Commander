@@ -425,6 +425,8 @@ namespace Il_2.Commander.Commander
             EnableTargetsToCoalition(201);
             EnableTargetsToCoalition(101);
             EnableWareHouse();
+            StartColumn(101);
+            StartColumn(201);
         }
         /// <summary>
         /// Вызывается при приходе каждого лога?
