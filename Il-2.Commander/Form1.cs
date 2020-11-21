@@ -171,16 +171,27 @@ namespace Il_2.Commander
         {
             if (busy && HandlerLogs.qLog.Count > 0)
             {
-                BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
-                busy = false;
-                var str = HandlerLogs.qLog.Dequeue();
-                Action startgen = () =>
+                if(HandlerLogs.qLog.Count > 0)
                 {
-                    commander.HandleLogFile(str);
-                };
-                Task taskstartgen = Task.Factory.StartNew(startgen);
+                    BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
+                    busy = false;
+                    var str = HandlerLogs.qLog.Dequeue();
+                    Action startgen = () =>
+                    {
+                        commander.HandleLogFile(str);
+                    };
+                    Task taskstartgen = Task.Factory.StartNew(startgen);
+                }
+                else
+                {
+                    Action startgen = () =>
+                    {
+                        commander.SendRconCommand();
+                    };
+                    Task taskstartgen = Task.Factory.StartNew(startgen);
+                }
             }
-            else
+            if(!TriggerTime)
             {
                 Action startgen = () =>
                 {
