@@ -449,7 +449,7 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
             messDurTime = DateTime.Now;
-            SetStateWH();
+            //SetStateWH();
             ClearPrevMission();
             dt = DateTime.Now;
             GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
@@ -461,8 +461,8 @@ namespace Il_2.Commander.Commander
             EnableTargetsToCoalition(201);
             EnableTargetsToCoalition(101);
             EnableWareHouse();
-            StartColumn(101);
-            StartColumn(201);
+            //StartColumn(101);
+            //StartColumn(201);
         }
         /// <summary>
         /// Вызывается при приходе каждого лога?
@@ -472,8 +472,8 @@ namespace Il_2.Commander.Commander
             UpdateCurrentPlayers();
             if (Form1.TriggerTime)
             {
-                StartColumn(101);
-                StartColumn(201);
+                //StartColumn(101);
+                //StartColumn(201);
             }
         }
         /// <summary>
