@@ -279,14 +279,17 @@ namespace Il_2.Commander.Commander
                 {
                     ostatok = 0;
                 }
-                var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
-                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                RconCommands.Enqueue(sendall);
-                RconCommands.Enqueue(sendred);
-                RconCommands.Enqueue(sendblue);
-                GetLogStr(mess, Color.Black);
+                if(ostatok > 0)
+                {
+                    var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
+                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                    RconCommands.Enqueue(sendall);
+                    RconCommands.Enqueue(sendred);
+                    RconCommands.Enqueue(sendblue);
+                    GetLogStr(mess, Color.Black);
+                }
             }
             if (ts.TotalMinutes >= DurationMission)
             {
@@ -304,6 +307,7 @@ namespace Il_2.Commander.Commander
                     StartGeneration("pregen");
                 }
             }
+            Form1.busy = true;
         }
         /// <summary>
         /// Приведение базы данных в исходное, стартовое положение. Все инпуты и прочее приводятся в положение "ВЫКЛ"

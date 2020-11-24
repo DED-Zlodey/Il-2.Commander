@@ -169,7 +169,7 @@ namespace Il_2.Commander
 
         private void timerRcon_Tick(object sender, EventArgs e)
         {
-            if (busy && HandlerLogs.qLog.Count > 0)
+            if (busy && TriggerTime)
             {
                 if(HandlerLogs.qLog.Count > 0)
                 {
@@ -184,6 +184,7 @@ namespace Il_2.Commander
                 }
                 else
                 {
+                    busy = false;
                     Action startgen = () =>
                     {
                         commander.SendRconCommand();
