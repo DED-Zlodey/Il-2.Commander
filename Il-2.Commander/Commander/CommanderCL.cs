@@ -307,7 +307,11 @@ namespace Il_2.Commander.Commander
                     StartGeneration("pregen");
                 }
             }
-            Form1.busy = true;
+            if (Form1.TriggerTime || RconCommands.Count > 0)
+            {
+                Form1.busy = true;
+                SetChangeLog();
+            }
         }
         /// <summary>
         /// Приведение базы данных в исходное, стартовое положение. Все инпуты и прочее приводятся в положение "ВЫКЛ"
@@ -465,8 +469,8 @@ namespace Il_2.Commander.Commander
             EnableTargetsToCoalition(201);
             EnableTargetsToCoalition(101);
             EnableWareHouse();
-            //StartColumn(101);
-            //StartColumn(201);
+            StartColumn(101);
+            StartColumn(201);
         }
         /// <summary>
         /// Вызывается при приходе каждого лога?
@@ -476,8 +480,8 @@ namespace Il_2.Commander.Commander
             UpdateCurrentPlayers();
             if (Form1.TriggerTime)
             {
-                //StartColumn(101);
-                //StartColumn(201);
+                StartColumn(101);
+                StartColumn(201);
             }
         }
         /// <summary>
@@ -651,25 +655,28 @@ namespace Il_2.Commander.Commander
                     localBP.Remove(entBP);
                 }
             }
-            if (ActivCol.Count < 2 && allcolumn.Count > 0)
+            if(localBP.Exists(x => x.Point < SetApp.Config.BattlePoints))
             {
-                int iter = 2 - ActivCol.Count;
-                for (int i = 0; i < iter; i++)
+                if (ActivCol.Count < 2 && allcolumn.Count > 0)
                 {
-                    var allwhcol = allcolumn.Where(x => x.NWH == localBP[i].WHID && x.Coalition == localBP[i].Coalition).ToList();
-                    if (allwhcol.Count > 0)
+                    int iter = 2 - ActivCol.Count;
+                    for (int i = 0; i < iter; i++)
                     {
-                        int rindex = random.Next(0, allwhcol.Count);
-                        var inputmess = allwhcol[rindex].NameCol;
-                        var ent = allwhcol[rindex];
-                        ent.Active = true;
-                        ActiveColumn.Add(ent);
-                        RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
-                        RconCommands.Enqueue(command);
-                        db.ColInput.First(x => x.NameCol == inputmess).Active = true;
+                        var allwhcol = allcolumn.Where(x => x.NWH == localBP[i].WHID && x.Coalition == localBP[i].Coalition).ToList();
+                        if (allwhcol.Count > 0)
+                        {
+                            int rindex = random.Next(0, allwhcol.Count);
+                            var inputmess = allwhcol[rindex].NameCol;
+                            var ent = allwhcol[rindex];
+                            ent.Active = true;
+                            ActiveColumn.Add(ent);
+                            RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
+                            RconCommands.Enqueue(command);
+                            db.ColInput.First(x => x.NameCol == inputmess).Active = true;
+                        }
                     }
+                    db.SaveChanges();
                 }
-                db.SaveChanges();
             }
             db.Dispose();
         }
@@ -1406,7 +1413,7 @@ namespace Il_2.Commander.Commander
                         var locent = allP.FirstOrDefault(x => x.IndexCity == index);
                         if (locent != null)
                         {
-                            if (locent.Kotel && locent.Coalitions == ent.Coalitions)
+                            if (locent.Kotel && locent.Coalitions != ent.Coalitions)
                             {
                                 var currentKotel = allP.Where(x => x.CompLinks == locent.CompLinks).ToList();
                                 for (int i = 0; i < currentKotel.Count; i++)

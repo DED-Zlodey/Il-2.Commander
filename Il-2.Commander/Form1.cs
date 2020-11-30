@@ -169,7 +169,7 @@ namespace Il_2.Commander
 
         private void timerRcon_Tick(object sender, EventArgs e)
         {
-            if (busy && TriggerTime)
+            if (busy)
             {
                 if(HandlerLogs.qLog.Count > 0)
                 {
@@ -184,6 +184,7 @@ namespace Il_2.Commander
                 }
                 else
                 {
+                    BeginInvoke((MethodInvoker)(() => label_status.Text = "Status False"));
                     busy = false;
                     Action startgen = () =>
                     {
@@ -192,7 +193,7 @@ namespace Il_2.Commander
                     Task taskstartgen = Task.Factory.StartNew(startgen);
                 }
             }
-            if(!TriggerTime)
+            if(!TriggerTime && !busy)
             {
                 Action startgen = () =>
                 {
