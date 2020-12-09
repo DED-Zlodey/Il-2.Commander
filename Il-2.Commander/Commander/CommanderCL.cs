@@ -302,12 +302,13 @@ namespace Il_2.Commander.Commander
                     GetLogStr(mess, Color.Red);
                     RconCommands.Enqueue(sendred);
                     RconCommands.Enqueue(sendblue);
+                    CollapsedCauldron();
                     CreateVictoryCoalition();
                     SetUnlockKotel();
                     StartGeneration("pregen");
                 }
             }
-            if (Form1.TriggerTime || RconCommands.Count > 0)
+            if (Form1.TriggerTime)
             {
                 Form1.busy = true;
                 SetChangeLog();
@@ -453,9 +454,9 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void StartMission()
         {
-            Form1.busy = true;
-            Form1.TriggerTime = true;
-            SetChangeLog();
+            //Form1.busy = true;
+            //Form1.TriggerTime = true;
+            //SetChangeLog();
             messDurTime = DateTime.Now;
             //SetStateWH();
             ClearPrevMission();
@@ -471,6 +472,9 @@ namespace Il_2.Commander.Commander
             EnableWareHouse();
             StartColumn(101);
             StartColumn(201);
+            Form1.busy = true;
+            Form1.TriggerTime = true;
+            SetChangeLog();
         }
         /// <summary>
         /// Вызывается при приходе каждого лога?
@@ -1413,14 +1417,15 @@ namespace Il_2.Commander.Commander
                         var locent = allP.FirstOrDefault(x => x.IndexCity == index);
                         if (locent != null)
                         {
-                            if (locent.Kotel && locent.Coalitions != ent.Coalitions)
+                            if (locent.Kotel)
                             {
-                                var currentKotel = allP.Where(x => x.CompLinks == locent.CompLinks).ToList();
+                                var currentKotel = allP.Where(x => x.CompLinks == locent.CompLinks && x.Kotel).ToList();
                                 for (int i = 0; i < currentKotel.Count; i++)
                                 {
                                     if (!UnlockCauldron.Exists(x => x.IndexCity == currentKotel[i].IndexCity))
                                     {
                                         UnlockCauldron.Add(currentKotel[i]);
+                                        GetLogStr("Освобожден из котла: " + currentKotel[i].Name_ru, Color.DarkMagenta);
                                     }
                                 }
                             }
@@ -1679,7 +1684,6 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private void CreateVictoryCoalition()
         {
-            CollapsedCauldron();
             var countVicRed = victories.Where(x => x.Coalition == 101).ToList().Count;
             var countVicBlue = victories.Where(x => x.Coalition == 201).ToList().Count;
             foreach (var item in victories)

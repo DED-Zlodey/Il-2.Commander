@@ -25,7 +25,7 @@ namespace Il_2.Commander.Commander
         private string LastFile { get; set; }
 
         #region Регулярки
-        private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
+        //private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
         #endregion
 
@@ -126,16 +126,13 @@ namespace Il_2.Commander.Commander
         private void ReadLogFile(string pathLog)
         {
             var str = SetApp.GetFile(pathLog);
-            if (str.Count > 1)
+            if (Form1.TriggerTime)
             {
-                if (Form1.TriggerTime)
-                {
-                    qLog.Enqueue(str);
-                }
-                else
-                {
-                    SetVictoryLog(str, pathLog);
-                }
+                qLog.Enqueue(str);
+            }
+            else
+            {
+                SetVictoryLog(str, pathLog);
             }
             FileInfo fi = new FileInfo(pathLog);
             File.Move(pathLog, SetApp.Config.DirStatLogs + fi.Name);
