@@ -618,7 +618,7 @@ namespace Il_2.Commander.Commander
                 }
             }
             CheckEveryLog();
-            if (Form1.TriggerTime || RconCommands.Count > 0)
+            if (Form1.TriggerTime)
             {
                 Form1.busy = true;
                 SetChangeLog();
