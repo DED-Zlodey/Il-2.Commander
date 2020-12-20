@@ -788,7 +788,7 @@ namespace Il_2.Commander.Commander
                             var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
                             GetLogStr(DestroyedMess, Color.DarkGoldenrod);
                         }
-                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 2;
+                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
                         if (countMandatory < 0)
                         {
                             countMandatory = 0;
@@ -1230,13 +1230,27 @@ namespace Il_2.Commander.Commander
         /// <param name="coal">Принимает номер коалиции для которой требуется установить текущую точку атаки</param>
         private void SetAttackPoint(int coal)
         {
-            if (coal == 201 && blueQ.Count > 0)
+            if (coal == 201)
             {
-                currentBluePoint = blueQ.Dequeue();
+                if(blueQ.Count > 0)
+                {
+                    currentBluePoint = blueQ.Dequeue();
+                }
+                else
+                {
+                    currentBluePoint = null;
+                }
             }
             if (coal == 101 && redQ.Count > 0)
             {
-                currentRedPoint = redQ.Dequeue();
+                if(redQ.Count > 0)
+                {
+                    currentRedPoint = redQ.Dequeue();
+                }
+                else
+                {
+                    currentRedPoint = null;
+                }
             }
         }
         /// <summary>
