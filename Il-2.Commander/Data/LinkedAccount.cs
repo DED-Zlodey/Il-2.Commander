@@ -1,4 +1,6 @@
-﻿namespace Il_2.Commander.Data
+﻿using System;
+
+namespace Il_2.Commander.Data
 {
     class LinkedAccount
     {
@@ -6,5 +8,6 @@
         public string GameID { get; set; }
         public string PilotName { get; set; }
         public string CheckCode { get; set; }
+        public DateTime CreateDate { get; set; }
     }
 }

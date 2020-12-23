@@ -12,7 +12,7 @@ namespace Il_2.Commander.Commander
     public delegate void EventFirstLog(int e);
     class HandlerLogs
     {
-        public event EventLog GetLogStr;
+        //public event EventLog GetLogStr;
         public event EventFirstLog EvLog;
         private Watcher watcher;
         /// <summary>

@@ -482,6 +482,10 @@ namespace Il_2.Commander.Commander
         public void CheckEveryLog()
         {           
             UpdateCurrentPlayers();
+            foreach(var item in onlinePlayers)
+            {
+                CheckRegistration(item);
+            }
             if (Form1.TriggerTime)
             {
                 StartColumn(101);
@@ -1797,14 +1801,6 @@ namespace Il_2.Commander.Commander
             {
                 rcon.OpenSDS(nameFSDS);
             }
-            //if (watcher == null)
-            //{
-            //    Action startwatcher = () =>
-            //    {
-            //        StartWatcher();
-            //    };
-            //    Task taskstartgen = Task.Factory.StartNew(startwatcher);
-            //}
         }
         /// <summary>
         /// Очищает все данные оставшиеся от предыдущей миссии
@@ -1985,16 +1981,19 @@ namespace Il_2.Commander.Commander
         private void CheckRegistration(Player player)
         {
             ExpertDB db = new ExpertDB();
-            if (!db.ProfileUser.ToList().Exists(x => x.GameId == player.PlayerId))
+            var profiles = db.ProfileUser.ToList();
+            if (!profiles.Exists(x => x.GameId == player.PlayerId))
             {
-                if (!db.LinkedAccount.ToList().Exists(x => x.GameID == player.PlayerId))
+                var linkes = db.LinkedAccount.ToList();
+                if (!linkes.Exists(x => x.GameID == player.PlayerId))
                 {
                     var code = GenerationCode(db);
                     db.LinkedAccount.Add(new LinkedAccount
                     {
                         CheckCode = code,
                         GameID = player.PlayerId,
-                        PilotName = player.Name
+                        PilotName = player.Name,
+                        CreateDate = DateTime.Now
                     });
                     db.SaveChanges();
                     var mess = "-=COMMANDER=- " + player.Name + " your registration code: " + code;
