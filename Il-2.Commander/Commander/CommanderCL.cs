@@ -172,7 +172,16 @@ namespace Il_2.Commander.Commander
                             RconCommands.Enqueue(wrap);
                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                             {
-                                pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
+                                var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
+                                if(locpilot.Player == null)
+                                {
+                                    CheckRegistration(player);
+                                    pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
+                                }
+                                else
+                                {
+                                    pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
+                                }
                             }
                         }
                     }
@@ -425,14 +434,6 @@ namespace Il_2.Commander.Commander
             processStartInfo.WorkingDirectory = SetApp.Config.DServerWorkingDirectory;
             processDS.StartInfo = processStartInfo;
             processDS.Start();
-            //if (watcher == null)
-            //{
-            //    Action startwatcher = () =>
-            //    {
-            //        StartWatcher();
-            //    };
-            //    Task taskstartgen = Task.Factory.StartNew(startwatcher);
-            //}
             processDS.WaitForExit(11000);
             StartRConService();
         }
@@ -482,10 +483,6 @@ namespace Il_2.Commander.Commander
         public void CheckEveryLog()
         {           
             UpdateCurrentPlayers();
-            foreach(var item in onlinePlayers)
-            {
-                CheckRegistration(item);
-            }
             if (Form1.TriggerTime)
             {
                 StartColumn(101);
@@ -648,7 +645,7 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             //var bp = battlePonts.Where(x => x.Coalition == coal).OrderBy(x => x.Point).ToList();
             var allcolumn = db.ColInput.Where(x => x.Coalition == coal && x.Permit).ToList();
-            var ActivCol = allcolumn.Where(x => x.Coalition == coal && x.Active).ToList();
+            var ActivCol = db.ColInput.Where(x => x.Coalition == coal && x.Active).ToList();
             List<BattlePonts> localBP = new List<BattlePonts>();
             for (int i = 0; i < 5; i++)
             {
@@ -681,6 +678,7 @@ namespace Il_2.Commander.Commander
                             RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
                             RconCommands.Enqueue(command);
                             db.ColInput.First(x => x.NameCol == inputmess).Active = true;
+                            db.ColInput.First(x => x.NameCol == inputmess).Permit = false;                         
                         }
                     }
                     db.SaveChanges();
@@ -1051,15 +1049,15 @@ namespace Il_2.Commander.Commander
                     double koef = 1;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 1.5;
+                        koef = 2.5;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 1.2;
+                        koef = 2.2;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 1;
+                        koef = 2;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1103,18 +1101,18 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    double koef = 1;
+                    double koef = 2;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 1.5;
+                        koef = 2.5;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 1.2;
+                        koef = 2.2;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 1;
+                        koef = 2;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1156,15 +1154,15 @@ namespace Il_2.Commander.Commander
                     double koef = 1;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 1.5;
+                        koef = 2.5;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 1.2;
+                        koef = 2.2;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 1;
+                        koef = 2;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1234,7 +1232,7 @@ namespace Il_2.Commander.Commander
         /// <param name="coal">Принимает номер коалиции для которой требуется установить текущую точку атаки</param>
         private void SetAttackPoint(int coal)
         {
-            if (coal == 201)
+            if (coal == 201 && blueQ.Count > 0)
             {
                 if(blueQ.Count > 0)
                 {
@@ -1894,7 +1892,6 @@ namespace Il_2.Commander.Commander
                     if (!onlinePlayers.Exists(x => x.PlayerId == players[i].PlayerId))
                     {
                         onlinePlayers.Add(players[i]);
-                        //CheckRegistration(players[i]);
                     }
                 }
                 List<Player> deleteplayers = new List<Player>();
