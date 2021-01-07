@@ -207,6 +207,8 @@ namespace Il_2.Commander.Commander
                     {
                         RconCommand sendmess = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, item.Command, item.Coalition);
                         RconCommands.Enqueue(sendmess);
+                        var mess = item.Command + " Coalition: " + item.Coalition;
+                        GetLogStr(mess, Color.IndianRed);
                         deletes.Add(item);
                     }
                 }
@@ -668,7 +670,7 @@ namespace Il_2.Commander.Commander
                     for (int i = 0; i < iter; i++)
                     {
                         var allwhcol = allcolumn.Where(x => x.NWH == localBP[i].WHID && x.Coalition == localBP[i].Coalition).ToList();
-                        if (allwhcol.Count > 0)
+                        if (allwhcol.Count > 0 && localBP[i].Point < SetApp.Config.BattlePoints)
                         {
                             int rindex = random.Next(0, allwhcol.Count);
                             var inputmess = allwhcol[rindex].NameCol;
@@ -679,6 +681,10 @@ namespace Il_2.Commander.Commander
                             RconCommands.Enqueue(command);
                             db.ColInput.First(x => x.NameCol == inputmess).Active = true;
                             db.ColInput.First(x => x.NameCol == inputmess).Permit = false;                         
+                        }
+                        if(allwhcol.Count == 0 && iter < 5)
+                        {
+                            iter++;
                         }
                     }
                     db.SaveChanges();
@@ -955,7 +961,7 @@ namespace Il_2.Commander.Commander
             db.ColInput.First(x => x.id == column.id).DestroyedUnits = column.DestroyedUnits;
             db.SaveChanges();
             db.Dispose();
-            RestoreWareHouseInMemory(column.NWH, column.Coalition);
+            //RestoreWareHouseInMemory(column.NWH, column.Coalition);
             ActiveColumn.Remove(column);
         }
         private void DisableColumnBridge(AType8 aType)
@@ -973,19 +979,23 @@ namespace Il_2.Commander.Commander
                     if (ActiveColumn.Exists(x => x.NameCol == item.NameObjective))
                     {
                         var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
-                        var column12 = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol)).ToList();
-                        var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol) && x.Destroyed).ToList();
+                        string namecol = item.NameObjective;
+                        var column12 = ColumnAType12.Where(x => x.NAME.Equals(namecol)).ToList();
+                        var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(namecol) && x.Destroyed).ToList();
                         var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " was stopped due to the destruction of the bridge. Destroyed unit: " + column12Dead.Count;
                         GetLogStr(altmess, Color.DarkViolet);
                         var allArrivalCol = ent.ArrivalCol + 1;
                         var allArrivalUnits = (int)(ent.Unit / 2) - column12Dead.Count;
-                        string namecol = ent.NameCol;
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = ent.ArrivalUnit + allArrivalUnits;
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
                         db.ColInput.First(x => x.NameCol == namecol).Active = false;
-                        db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count + (int)(ent.Unit / 2);
+                        db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count + ent.Unit / 2;
                         ActiveColumn.Remove(ent);
-                        RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
+                        foreach (var colitem in column12Dead)
+                        {
+                            ColumnAType12.Remove(colitem);
+                        }
+                        //RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
                     }
                 }
             }
@@ -1011,19 +1021,23 @@ namespace Il_2.Commander.Commander
                     if (ActiveColumn.Exists(x => x.NameCol == item.NameObjective))
                     {
                         var ent = ActiveColumn.First(x => x.NameCol == item.NameObjective);
-                        var column12 = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol)).ToList();
-                        var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(ent.NameCol) && x.Destroyed).ToList();
+                        string namecol = item.NameObjective;
+                        var column12 = ColumnAType12.Where(x => x.NAME.Equals(namecol)).ToList();
+                        var column12Dead = ColumnAType12.Where(x => x.NAME.Equals(namecol) && x.Destroyed).ToList();
                         var altmess = "-=COMMANDER=-:  Сargo convoy for warehouse: " + ent.NWH + " Coalition: " + ent.Coalition + " arrived at its destination. Destroyed unit: " + column12Dead.Count;
                         GetLogStr(altmess, Color.DarkViolet);
                         var allArrivalCol = ent.ArrivalCol + 1;
                         var allArrivalUnits = ent.Unit - column12Dead.Count;
-                        string namecol = ent.NameCol;
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalUnit = ent.ArrivalUnit + allArrivalUnits;
                         db.ColInput.First(x => x.NameCol == namecol).ArrivalCol = allArrivalCol;
                         db.ColInput.First(x => x.NameCol == namecol).Active = false;
                         db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count;
                         ActiveColumn.Remove(ent);
-                        RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
+                        foreach(var colitem in column12Dead)
+                        {
+                            ColumnAType12.Remove(colitem);
+                        }
+                        //RestoreWareHouseInMemory(ent.NWH, ent.Coalition, db);
                     }
                 }
             }
@@ -1046,14 +1060,14 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    double koef = 1;
+                    double koef = 2;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 2.5;
+                        koef = 3;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 2.2;
+                        koef = 2.4;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
@@ -1104,11 +1118,11 @@ namespace Il_2.Commander.Commander
                     double koef = 2;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 2.5;
+                        koef = 3;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 2.2;
+                        koef = 2.4;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
@@ -1154,11 +1168,11 @@ namespace Il_2.Commander.Commander
                     double koef = 1;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 2.5;
+                        koef = 3;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 2.2;
+                        koef = 2.4;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
@@ -1232,7 +1246,7 @@ namespace Il_2.Commander.Commander
         /// <param name="coal">Принимает номер коалиции для которой требуется установить текущую точку атаки</param>
         private void SetAttackPoint(int coal)
         {
-            if (coal == 201 && blueQ.Count > 0)
+            if (coal == 201)
             {
                 if(blueQ.Count > 0)
                 {
@@ -1243,7 +1257,7 @@ namespace Il_2.Commander.Commander
                     currentBluePoint = null;
                 }
             }
-            if (coal == 101 && redQ.Count > 0)
+            if (coal == 101)
             {
                 if(redQ.Count > 0)
                 {
