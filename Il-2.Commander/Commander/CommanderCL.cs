@@ -682,7 +682,7 @@ namespace Il_2.Commander.Commander
                             db.ColInput.First(x => x.NameCol == inputmess).Active = true;
                             db.ColInput.First(x => x.NameCol == inputmess).Permit = false;                         
                         }
-                        if(allwhcol.Count == 0 && iter < 5)
+                        if(allwhcol.Count == 0 && iter < localBP.Count)
                         {
                             iter++;
                         }
