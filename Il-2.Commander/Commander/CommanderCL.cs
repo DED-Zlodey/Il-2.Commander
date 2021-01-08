@@ -1061,17 +1061,18 @@ namespace Il_2.Commander.Commander
                 foreach (var item in columns)
                 {
                     double koef = 2;
+                    var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 3;
+                        koef = wcol / 8;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 2.4;
+                        koef = wcol / 10;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 2;
+                        koef = wcol / 12;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1116,17 +1117,18 @@ namespace Il_2.Commander.Commander
                 foreach (var item in columns)
                 {
                     double koef = 2;
+                    var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 3;
+                        koef = wcol / 8;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 2.4;
+                        koef = wcol / 10;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 2;
+                        koef = wcol / 12;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
@@ -1166,17 +1168,18 @@ namespace Il_2.Commander.Commander
                 foreach (var item in columns)
                 {
                     double koef = 1;
+                    var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
-                        koef = 3;
+                        koef = wcol / 8;
                     }
                     if (item.TypeCol == (int)TypeColumn.Mixed)
                     {
-                        koef = 2.4;
+                        koef = wcol / 10;
                     }
                     if (item.TypeCol == (int)TypeColumn.Transport)
                     {
-                        koef = 2;
+                        koef = wcol / 12;
                     }
                     arrivalBP += item.ArrivalUnit * koef;
                 }
