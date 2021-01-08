@@ -1167,7 +1167,7 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    double koef = 1;
+                    double koef = 2;
                     var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
