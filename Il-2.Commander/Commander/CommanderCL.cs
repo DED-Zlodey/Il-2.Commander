@@ -1060,7 +1060,7 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    double koef = 2;
+                    double koef = SetApp.Config.TransportMult;
                     var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
@@ -1116,7 +1116,7 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    double koef = 2;
+                    double koef = SetApp.Config.TransportMult;
                     var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {
@@ -1167,7 +1167,7 @@ namespace Il_2.Commander.Commander
             {
                 foreach (var item in columns)
                 {
-                    double koef = 2;
+                    double koef = SetApp.Config.TransportMult;
                     var wcol = koef * 12;
                     if (item.TypeCol == (int)TypeColumn.Armour)
                     {

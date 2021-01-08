@@ -79,5 +79,10 @@ namespace Il_2.Commander
         /// </summary>
         [JsonProperty("BattlePoints")]
         public int BattlePoints { get; private set; }
+        /// <summary>
+        /// Мультипликатор привозимого груза для одной ед. техники транспортной колонны
+        /// </summary>
+        [JsonProperty("TransportMult")]
+        public double TransportMult { get; private set; }
     }
 }
