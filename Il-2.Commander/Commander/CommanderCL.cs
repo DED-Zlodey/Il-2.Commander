@@ -457,15 +457,12 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void StartMission()
         {
-            //Form1.busy = true;
-            //Form1.TriggerTime = true;
-            //SetChangeLog();
             messDurTime = DateTime.Now;
-            //SetStateWH();
             ClearPrevMission();
             dt = DateTime.Now;
             GetLogStr("Mission start: " + dt.ToShortDateString() + " " + dt.ToLongTimeString(), Color.Black);
             GetLogStr("Game date: " + GameDate, Color.DarkCyan);
+            SetPhase(0);
             SetDurationMission(1);
             SavedMissionTimeStart();
             InitDirectPoints();
@@ -478,6 +475,72 @@ namespace Il_2.Commander.Commander
             Form1.busy = true;
             Form1.TriggerTime = true;
             SetChangeLog();
+        }
+        private void SetPhase(int phase)
+        {
+            string mess = string.Empty;
+            ExpertDB db = new ExpertDB();
+            var phases = db.PhaseGen.ToList();
+            foreach(var item in phases)
+            {
+                db.PhaseGen.Remove(item);
+            }
+            db.SaveChanges();
+            if(phase == 0)
+            {
+                db.PhaseGen.Add(new PhaseGen
+                {
+                    CreateDate = DateTime.Now,
+                    NPhase = 0
+                });
+                db.SaveChanges();
+                messenger.SpecSend("Phase0");
+            }
+            if (phase == 1)
+            {
+                mess = "-=COMMANDER=- Planning for an attack on the next mission began. 3 minutes";
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+                db.PhaseGen.Add(new PhaseGen
+                {
+                    CreateDate = DateTime.Now,
+                    NPhase = 1
+                });
+                db.SaveChanges();
+                messenger.SpecSend("Phase1");
+            }
+            if (phase == 2)
+            {
+                mess = "-=COMMANDER=- Start generation next mission";
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+                db.PhaseGen.Add(new PhaseGen
+                {
+                    CreateDate = DateTime.Now,
+                    NPhase = 2
+                });
+                db.SaveChanges();
+                messenger.SpecSend("Phase2");
+            }
+            if (phase == 3)
+            {
+                db.PhaseGen.Add(new PhaseGen
+                {
+                    CreateDate = DateTime.Now,
+                    NPhase = 3
+                });
+                db.SaveChanges();
+                messenger.SpecSend("Phase3");
+            }
+            db.Dispose();
         }
         /// <summary>
         /// Вызывается при приходе каждого лога?
@@ -1643,8 +1706,8 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void StartGeneration()
         {
+            SetPhase(2);
             GetLogStr("Start Generation...", Color.Black);
-            messenger.SpecSend("Phase2");
             processGenerator = new Process();
             ProcessStartInfo processStartInfo = new ProcessStartInfo(SetApp.Config.Generator);
             processStartInfo.WorkingDirectory = SetApp.Config.GeneratorWorkingDirectory;
@@ -1689,7 +1752,7 @@ namespace Il_2.Commander.Commander
             GetOfficerTime("StartTimeOfficer", Color.Black);
             messenger.SpecSend("FrontLine");
             messenger.SpecSend("Targets");
-            messenger.SpecSend("Phase1");
+            SetPhase(1);
             ClearUserDirect();
             SetEndMission(1);
         }
@@ -1794,7 +1857,7 @@ namespace Il_2.Commander.Commander
                 GetLogArray(content);
                 GetLogStr("Restart Mission...", Color.Black);
                 NameMission = GetNameNextMission(1);
-                messenger.SpecSend("Phase3");
+                SetPhase(3);
                 ReWriteSDS(SetApp.Config.DirSDS);
                 NextMission(SetApp.Config.DirSDS);
             }

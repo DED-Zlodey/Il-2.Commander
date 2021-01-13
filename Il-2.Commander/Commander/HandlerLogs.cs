@@ -25,7 +25,6 @@ namespace Il_2.Commander.Commander
         private string LastFile { get; set; }
 
         #region Регулярки
-        //private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
         #endregion
 
@@ -75,6 +74,10 @@ namespace Il_2.Commander.Commander
                 }
             }
         }
+        /// <summary>
+        /// Обработка первого лог файла
+        /// </summary>
+        /// <param name="path">Путь до файла</param>
         private void HandlingFirstLog(string path)
         {
             var str = SetApp.GetFile(path);
@@ -91,6 +94,13 @@ namespace Il_2.Commander.Commander
                 File.Delete(path);
             }
         }
+        /// <summary>
+        /// Подменяет лог файл. В лог добавляются аэродромы подскока
+        /// </summary>
+        /// <param name="str">Лог списком строк</param>
+        /// <param name="i">Номер строки</param>
+        /// <param name="strA">Номер тика</param>
+        /// <param name="path">Путь к фалу</param>
         private void ReWriteAType9(List<string> str, int i, string strA, string path)
         {
             List<string> fakefields = new List<string>();
