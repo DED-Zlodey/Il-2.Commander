@@ -897,7 +897,7 @@ namespace Il_2.Commander.Commander
                             }
                         }
                         db.SaveChanges();
-                        var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1).ToList();
+                        var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1 && x.GroupInput != 14).ToList();
                         db.Dispose();
                         if (alltargets.Count == 0)
                         {
@@ -1813,6 +1813,22 @@ namespace Il_2.Commander.Commander
             {
                 var victoryCoal = InvertedCoalition(item.Coalitions);
                 victories.Add(new Victory(item, victoryCoal));
+                MinusResourceWH(item.Coalitions);
+            }
+            db.Dispose();
+        }
+        private void MinusResourceWH(int coal)
+        {
+            ExpertDB db = new ExpertDB();
+            var lbp = db.BattlePonts.Where(x => x.Coalition == coal && x.Point >= 36).ToList();
+            if (lbp.Count > 0)
+            {
+                int index = random.Next(0, lbp.Count);
+                var ent = lbp[index];
+                var whid = ent.WHID;
+                var curpoints = ent.Point - 36;
+                db.BattlePonts.First(x => x.Coalition == coal && x.WHID == whid).Point = curpoints;
+                db.SaveChanges();
             }
             db.Dispose();
         }
