@@ -480,8 +480,8 @@ namespace Il_2.Commander.Commander
         private void EnableTankBat()
         {
             ExpertDB db = new ExpertDB();
-            var blueTB = db.ServerInputs.Where(x => x.Coalition == 201 && x.GroupInput == 15 && x.Name.Contains("_Off_")).ToList();
-            var redTB = db.ServerInputs.Where(x => x.Coalition == 101 && x.GroupInput == 15 && x.Name.Contains("_Off_")).ToList();
+            var blueTB = db.ServerInputs.Where(x => x.Coalition == 201 && x.GroupInput == 15 && x.Name.Contains("_On_")).ToList();
+            var redTB = db.ServerInputs.Where(x => x.Coalition == 101 && x.GroupInput == 15 && x.Name.Contains("_On_")).ToList();
             foreach(var item in blueTB)
             {
                 RconCommand command = new RconCommand(Rcontype.Input, item.Name);
