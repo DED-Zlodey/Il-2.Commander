@@ -470,11 +470,34 @@ namespace Il_2.Commander.Commander
             EnableTargetsToCoalition(201);
             EnableTargetsToCoalition(101);
             EnableWareHouse();
+            EnableTankBat();
             StartColumn(101);
             StartColumn(201);
             Form1.busy = true;
             Form1.TriggerTime = true;
             SetChangeLog();
+        }
+        private void EnableTankBat()
+        {
+            ExpertDB db = new ExpertDB();
+            var blueTB = db.ServerInputs.Where(x => x.Coalition == 201 && x.GroupInput == 15 && x.Name.Contains("_Off_")).ToList();
+            var redTB = db.ServerInputs.Where(x => x.Coalition == 101 && x.GroupInput == 15 && x.Name.Contains("_Off_")).ToList();
+            foreach(var item in blueTB)
+            {
+                RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                RconCommands.Enqueue(command);
+                int id = item.id;
+                db.ServerInputs.First(x => x.id == id).Enable = 1;
+            }
+            foreach (var item in redTB)
+            {
+                RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                RconCommands.Enqueue(command);
+                int id = item.id;
+                db.ServerInputs.First(x => x.id == id).Enable = 1;
+            }
+            db.SaveChanges();
+            db.Dispose();
         }
         private void SetPhase(int phase)
         {
