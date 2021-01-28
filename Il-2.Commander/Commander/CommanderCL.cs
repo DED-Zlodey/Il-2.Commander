@@ -1953,6 +1953,10 @@ namespace Il_2.Commander.Commander
             {
                 UnlockCauldron.Clear();
             }
+            if(Planeset.Count > 0)
+            {
+                Planeset.Clear();
+            }    
         }
         /// <summary>
         /// Фиксирует завершение миссии в базе данных. Если миссий впереди не осталось, вызывает ReSetCompany
