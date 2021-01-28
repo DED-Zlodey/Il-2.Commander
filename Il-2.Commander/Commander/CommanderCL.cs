@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace Il_2.Commander.Commander
 {
@@ -85,17 +86,20 @@ namespace Il_2.Commander.Commander
         /// Список воздушного снабжения
         /// </summary>
         private List<HandlingAirSupply> airSupplies = new List<HandlingAirSupply>();
+        /// <summary>
+        /// Все 12 Атайпы в миссии
+        /// </summary>
         private List<AType12> AllLogs = new List<AType12>();
         private List<GraphCity> UnlockCauldron = new List<GraphCity>();
         /// <summary>
-        /// крайний лог-файл
+        /// Список самолетов
         /// </summary>
-        private string LastFile { get; set; }
+        private List<PlaneSet> Planeset;
+
         /// <summary>
         /// Имя текущей миссии.
         /// </summary>
         private string NameMission = string.Empty;
-        //private bool TriggerTime = true;
         private DateTime dt = DateTime.Now;
         private DateTime messDurTime = DateTime.Now;
         private int durmess = 30;
@@ -173,7 +177,7 @@ namespace Il_2.Commander.Commander
                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                             {
                                 var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
-                                if(locpilot.Player == null)
+                                if (locpilot.Player == null)
                                 {
                                     CheckRegistration(player);
                                     pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
@@ -290,7 +294,7 @@ namespace Il_2.Commander.Commander
                 {
                     ostatok = 0;
                 }
-                if(ostatok > 0)
+                if (ostatok > 0)
                 {
                     var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
                     RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
@@ -457,6 +461,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void StartMission()
         {
+            Planeset = GetPlaneSet();
             messDurTime = DateTime.Now;
             ClearPrevMission();
             dt = DateTime.Now;
@@ -477,12 +482,19 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
         }
+        private List<PlaneSet> GetPlaneSet()
+        {
+            ExpertDB db = new ExpertDB();
+            var planeset = db.PlaneSet.ToList();
+            db.Dispose();
+            return planeset;
+        }
         private void EnableTankBat()
         {
             ExpertDB db = new ExpertDB();
             var blueTB = db.ServerInputs.Where(x => x.Coalition == 201 && x.GroupInput == 15 && x.Name.Contains("_On_")).ToList();
             var redTB = db.ServerInputs.Where(x => x.Coalition == 101 && x.GroupInput == 15 && x.Name.Contains("_On_")).ToList();
-            foreach(var item in blueTB)
+            foreach (var item in blueTB)
             {
                 RconCommand command = new RconCommand(Rcontype.Input, item.Name);
                 RconCommands.Enqueue(command);
@@ -504,12 +516,12 @@ namespace Il_2.Commander.Commander
             string mess = string.Empty;
             ExpertDB db = new ExpertDB();
             var phases = db.PhaseGen.ToList();
-            foreach(var item in phases)
+            foreach (var item in phases)
             {
                 db.PhaseGen.Remove(item);
             }
             db.SaveChanges();
-            if(phase == 0)
+            if (phase == 0)
             {
                 db.PhaseGen.Add(new PhaseGen
                 {
@@ -569,7 +581,7 @@ namespace Il_2.Commander.Commander
         /// Вызывается при приходе каждого лога?
         /// </summary>
         public void CheckEveryLog()
-        {           
+        {
             UpdateCurrentPlayers();
             if (Form1.TriggerTime)
             {
@@ -593,7 +605,17 @@ namespace Il_2.Commander.Commander
                     RconCommands.Enqueue(wrap);
                     if (aType.TYPE.Contains("Ju 52 3mg4e"))
                     {
-                        aType.Cargo = 0.35;
+                        var planeName = AllLogs.FindLast(x => x.ID == aType.PLID).NAME;
+                        if (!string.IsNullOrEmpty(planeName))
+                        {
+                            var numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                            var index = planeName.Length - 2;
+                            planeName = planeName.Substring(0, index);
+                            if (planeName.Equals("Transport"))
+                            {
+                                aType.Cargo = 0.35;
+                            }
+                        }
                     }
                     pilotsList.Add(aType);
                     if (onlinePlayers.Exists(x => x.PlayerId == aType.LOGIN))
@@ -628,6 +650,10 @@ namespace Il_2.Commander.Commander
                         CheckDestroyTarget(aType);
                         updateTarget = true;
                     }
+                    else
+                    {
+                        HandleKillPilot(aType);
+                    }
                 }
                 if (str[i].Contains("AType:5 "))
                 {
@@ -652,16 +678,30 @@ namespace Il_2.Commander.Commander
                     var aType = new AType6(str[i]);
                     if (pilotsList.Exists(x => x.PLID == aType.PID))
                     {
+                        int numfield = 0;
+                        var ent = pilotsList.First(x => x.PLID == aType.PID);
+                        var planeName = AllLogs.FindLast(x => x.ID == ent.PLID).NAME;
+                        if (!string.IsNullOrEmpty(planeName))
+                        {
+                            numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                            var index = planeName.Length - 2;
+                            planeName = planeName.Substring(0, index);
+                        }
                         pilotsList.First(x => x.PLID == aType.PID).GameStatus = GameStatusPilot.Parking.ToString();
-                        var playerid = pilotsList.First(x => x.PLID == aType.PID).LOGIN;
+                        var playerid = ent.LOGIN;
                         if (onlinePlayers.Exists(x => x.PlayerId == playerid))
                         {
                             onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
                         }
-                        var ent = pilotsList.First(x => x.PLID == aType.PID);
                         if (ent.TYPE.Contains("Ju 52 3mg4e"))
                         {
-                            SupplyCauldron(aType, ent);
+                            if (!string.IsNullOrEmpty(planeName))
+                            {
+                                if (planeName.Equals("Transport"))
+                                {
+                                    SupplyCauldron(aType, ent);
+                                }
+                            }
                         }
                     }
                 }
@@ -714,14 +754,54 @@ namespace Il_2.Commander.Commander
             }
         }
         /// <summary>
-        /// Инициализация состояния складов
+        ///  Обработка уничтожения самолета
         /// </summary>
-        private void SetStateWH()
+        /// <param name="aType"></param>
+        private void HandleKillPilot(AType3 aType)
         {
-            battlePonts.Clear();
             ExpertDB db = new ExpertDB();
-            var bpl = db.BattlePonts.ToList();
-            battlePonts.AddRange(bpl);
+            int numfield = 0;
+            var ent = AllLogs.FindLast(x => x.ID == aType.TID);
+            if (ent != null)
+            {
+                if (Planeset.Exists(x => x.LogType == ent.TYPE))
+                {
+                    var planeName = ent.NAME;
+                    if (!string.IsNullOrEmpty(planeName))
+                    {
+                        var psent = db.PlaneSet.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
+                        if (psent != null)
+                        {
+                            numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                            var index = planeName.Length - 2;
+                            planeName = planeName.Substring(0, index);
+                            db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = psent.Number - 1;
+                            Planeset.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = psent.Number - 1;
+                            var mess = "-=COMMANDER=-: AirCraft destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " Coal: " + psent.Coalition + " NumPlanes: " + (psent.Number - 1);
+                            GetLogStr(mess, Color.DarkMagenta);
+                            var orders = db.PlanesOrders.ToList();
+                            if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
+                            {
+                                var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
+                                db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
+                            }
+                            else
+                            {
+                                db.PlanesOrders.Add(new PlanesOrders
+                                {
+                                    Coalition = psent.Coalition,
+                                    DateDeath = DateTime.Parse(GameDate),
+                                    FreqSupply = psent.FreqSupply,
+                                    Name = psent.Name,
+                                    Number = 1,
+                                    PlaneSetId = psent.id
+                                });
+                            }
+                            db.SaveChanges();
+                        }
+                    }
+                }
+            }
             db.Dispose();
         }
         /// <summary>
@@ -748,7 +828,7 @@ namespace Il_2.Commander.Commander
                     localBP.Remove(entBP);
                 }
             }
-            if(localBP.Exists(x => x.Point < SetApp.Config.BattlePoints))
+            if (localBP.Exists(x => x.Point < SetApp.Config.BattlePoints))
             {
                 if (ActivCol.Count < 2 && allcolumn.Count > 0)
                 {
@@ -766,9 +846,9 @@ namespace Il_2.Commander.Commander
                             RconCommand command = new RconCommand(Rcontype.Input, ent.NameCol);
                             RconCommands.Enqueue(command);
                             db.ColInput.First(x => x.NameCol == inputmess).Active = true;
-                            db.ColInput.First(x => x.NameCol == inputmess).Permit = false;                         
+                            db.ColInput.First(x => x.NameCol == inputmess).Permit = false;
                         }
-                        if(allwhcol.Count == 0 && iter < localBP.Count)
+                        if (allwhcol.Count == 0 && iter < localBP.Count)
                         {
                             iter++;
                         }
@@ -1119,7 +1199,7 @@ namespace Il_2.Commander.Commander
                         db.ColInput.First(x => x.NameCol == namecol).Active = false;
                         db.ColInput.First(x => x.NameCol == namecol).DestroyedUnits = ent.DestroyedUnits + column12Dead.Count;
                         ActiveColumn.Remove(ent);
-                        foreach(var colitem in column12Dead)
+                        foreach (var colitem in column12Dead)
                         {
                             ColumnAType12.Remove(colitem);
                         }
@@ -1128,118 +1208,6 @@ namespace Il_2.Commander.Commander
                 }
             }
             db.SaveChanges();
-            db.Dispose();
-        }
-        /// <summary>
-        /// Восстанавливает склады в памяти, чтобы точнее управлять колоннами.
-        /// </summary>
-        /// <param name="numtarget">Номер склада</param>
-        /// <param name="coal">Номер коалиции</param>
-        /// <param name="db">БД</param>
-        private void RestoreWareHouseInMemory(int numtarget, int coal, ExpertDB db)
-        {
-            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
-            var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
-            var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
-            var arrivalBP = 0.00;
-            if (columns.Count > 0)
-            {
-                foreach (var item in columns)
-                {
-                    double koef = SetApp.Config.TransportMult;
-                    var wcol = koef * 12;
-                    if (item.TypeCol == (int)TypeColumn.Armour)
-                    {
-                        koef = wcol / 8;
-                    }
-                    if (item.TypeCol == (int)TypeColumn.Mixed)
-                    {
-                        koef = wcol / 10;
-                    }
-                    if (item.TypeCol == (int)TypeColumn.Transport)
-                    {
-                        koef = wcol / 12;
-                    }
-                    arrivalBP += item.ArrivalUnit * koef;
-                }
-                if (arrivalBP < damage.Count)
-                {
-                    //var counter = (int)arrivalBP;
-                    //for (int i = 0; i < counter; i++)
-                    //{
-                    //    int rindex = random.Next(0, damage.Count);
-                    //    var ent = damage[rindex];
-                    //}
-                }
-                else
-                {
-                    foreach (var item in damage)
-                    {
-                        arrivalBP = arrivalBP - 1;
-                    }
-                    var finalBP = bp.Point + (int)arrivalBP;
-                    if (finalBP > SetApp.Config.BattlePoints)
-                    {
-                        finalBP = SetApp.Config.BattlePoints;
-                    }
-                    battlePonts.First(x => x.Coalition == coal && x.WHID == numtarget).Point = finalBP;
-                }
-            }
-        }
-        /// <summary>
-        /// Восстанавливает склады в памяти, чтобы точнее управлять колоннами.
-        /// </summary>
-        /// <param name="numtarget">Номер склада</param>
-        /// <param name="coal">Номер коалиции</param>
-        private void RestoreWareHouseInMemory(int numtarget, int coal)
-        {
-            ExpertDB db = new ExpertDB();
-            var damage = db.DamageLog.Where(x => x.WHID == numtarget && x.Coalition == coal).ToList();
-            var bp = db.BattlePonts.First(x => x.Coalition == coal && x.WHID == numtarget);
-            var columns = db.ColInput.Where(x => x.IndexPoint == numtarget && x.ArrivalUnit > 0 && x.Coalition == coal).ToList();
-            var arrivalBP = 0.00;
-            if (columns.Count > 0)
-            {
-                foreach (var item in columns)
-                {
-                    double koef = SetApp.Config.TransportMult;
-                    var wcol = koef * 12;
-                    if (item.TypeCol == (int)TypeColumn.Armour)
-                    {
-                        koef = wcol / 8;
-                    }
-                    if (item.TypeCol == (int)TypeColumn.Mixed)
-                    {
-                        koef = wcol / 10;
-                    }
-                    if (item.TypeCol == (int)TypeColumn.Transport)
-                    {
-                        koef = wcol / 12;
-                    }
-                    arrivalBP += item.ArrivalUnit * koef;
-                }
-                if (arrivalBP < damage.Count)
-                {
-                    //for (int i = 0; i < arrivalBP; i++)
-                    //{
-                    //    int rindex = random.Next(0, damage.Count);
-                    //    var ent = damage[rindex];
-                    //}
-                }
-                else
-                {
-                    foreach (var item in damage)
-                    {
-                        arrivalBP = arrivalBP - 1;
-                    }
-                    var finalBP = bp.Point + (int)arrivalBP;
-                    if (finalBP > SetApp.Config.BattlePoints)
-                    {
-                        finalBP = SetApp.Config.BattlePoints;
-                    }
-                    battlePonts.First(x => x.Coalition == coal && x.WHID == numtarget).Point = finalBP;
-                }
-            }
             db.Dispose();
         }
         private BattlePonts GetBP(int numtarget, int coal)
@@ -1337,7 +1305,7 @@ namespace Il_2.Commander.Commander
         {
             if (coal == 201)
             {
-                if(blueQ.Count > 0)
+                if (blueQ.Count > 0)
                 {
                     currentBluePoint = blueQ.Dequeue();
                 }
@@ -1348,7 +1316,7 @@ namespace Il_2.Commander.Commander
             }
             if (coal == 101)
             {
-                if(redQ.Count > 0)
+                if (redQ.Count > 0)
                 {
                     currentRedPoint = redQ.Dequeue();
                 }
@@ -1916,6 +1884,11 @@ namespace Il_2.Commander.Commander
             var nameFSDS = fi.Name;
             if (rcon != null)
             {
+                rcon.OpenSDS(nameFSDS);
+            }
+            else
+            {
+                StartRConService();
                 rcon.OpenSDS(nameFSDS);
             }
         }

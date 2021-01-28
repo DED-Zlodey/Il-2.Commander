@@ -49,5 +49,7 @@ namespace Il_2.Commander.Data
         public virtual DbSet<PilotDirect> PilotDirect { get; set; }
         public virtual DbSet<VoteDirect> VoteDirect { get; set; }
         public virtual DbSet<PhaseGen> PhaseGen { get; set; }
+        public virtual DbSet<PlaneSet> PlaneSet { get; set; }
+        public virtual DbSet<PlanesOrders> PlanesOrders { get; set; }
     }
 }
