@@ -654,7 +654,7 @@ namespace Il_2.Commander.Commander
                         CheckDestroyTarget(aType);
                         updateTarget = true;
                     }
-                    if (pilotsList.Exists(x => x.PID == aType.TID) || pilotsList.Exists(x => x.PLID == aType.TID))
+                    if (pilotsList.Exists(x => x.PLID == aType.TID))
                     {
                         HandleKillPilot(aType);
                     }
@@ -780,9 +780,10 @@ namespace Il_2.Commander.Commander
                         var psent = Planeset.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
                         if (psent != null)
                         {
+                            var pilot = pilotsList.First(x => x.PLID == aType.TID);
                             var ncraft = psent.Number - 1;
                             db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
-                            var mess = "-=COMMANDER=-: AirCraft destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " Coal: " + psent.Coalition + " NumPlanes: " + ncraft.ToString();
+                            var mess = "-=COMMANDER=-: Kill " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
                             GetLogStr(mess, Color.Red);
                             var orders = db.PlanesOrders.ToList();
                             if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
