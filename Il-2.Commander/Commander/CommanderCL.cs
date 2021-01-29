@@ -482,6 +482,10 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
         }
+        private void GetBotPilot()
+        {
+
+        }
         private List<PlaneSet> GetPlaneSet()
         {
             ExpertDB db = new ExpertDB();
@@ -650,7 +654,7 @@ namespace Il_2.Commander.Commander
                         CheckDestroyTarget(aType);
                         updateTarget = true;
                     }
-                    else
+                    if (pilotsList.Exists(x => x.PID == aType.TID) || pilotsList.Exists(x => x.PLID == aType.TID))
                     {
                         HandleKillPilot(aType);
                     }
@@ -760,6 +764,7 @@ namespace Il_2.Commander.Commander
         private void HandleKillPilot(AType3 aType)
         {
             ExpertDB db = new ExpertDB();
+            var Planeset = db.PlaneSet.ToList();
             int numfield = 0;
             var ent = AllLogs.FindLast(x => x.ID == aType.TID);
             if (ent != null)
@@ -769,16 +774,16 @@ namespace Il_2.Commander.Commander
                     var planeName = ent.NAME;
                     if (!string.IsNullOrEmpty(planeName))
                     {
-                        var psent = db.PlaneSet.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
+                        numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                        var index = planeName.Length - 2;
+                        planeName = planeName.Substring(0, index);
+                        var psent = Planeset.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
                         if (psent != null)
                         {
-                            numfield = int.Parse(planeName.Substring(planeName.Length - 1));
-                            var index = planeName.Length - 2;
-                            planeName = planeName.Substring(0, index);
-                            db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = psent.Number - 1;
-                            Planeset.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = psent.Number - 1;
-                            var mess = "-=COMMANDER=-: AirCraft destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " Coal: " + psent.Coalition + " NumPlanes: " + (psent.Number - 1);
-                            GetLogStr(mess, Color.DarkMagenta);
+                            var ncraft = psent.Number - 1;
+                            db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
+                            var mess = "-=COMMANDER=-: AirCraft destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " Coal: " + psent.Coalition + " NumPlanes: " + ncraft.ToString();
+                            GetLogStr(mess, Color.Red);
                             var orders = db.PlanesOrders.ToList();
                             if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
                             {
