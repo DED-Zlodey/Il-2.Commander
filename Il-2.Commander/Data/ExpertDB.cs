@@ -51,5 +51,6 @@ namespace Il_2.Commander.Data
         public virtual DbSet<PhaseGen> PhaseGen { get; set; }
         public virtual DbSet<PlaneSet> PlaneSet { get; set; }
         public virtual DbSet<PlanesOrders> PlanesOrders { get; set; }
+        public virtual DbSet<BanList> BanList { get; set; }
     }
 }

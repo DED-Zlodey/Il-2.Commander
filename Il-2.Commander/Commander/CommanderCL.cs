@@ -196,6 +196,25 @@ namespace Il_2.Commander.Commander
                         rcon.ResetSPS();
                         GetLogStr("Reset SPS: " + DateTime.Now.ToLongTimeString(), myRgbColor);
                     }
+                    if(result != null && result.Type == Rcontype.CheckBans)
+                    {
+                        ExpertDB db = new ExpertDB();
+                        var ent = db.BanList.FirstOrDefault(x => x.PlayerId == result.Bans.USERID);
+                        if(ent != null)
+                        {
+                            var DateEndBan = ent.CreateDate.AddHours(ent.HoursBan);
+                            if(DateEndBan <= DateTime.Now)
+                            {
+                                db.BanList.Remove(ent);
+                                db.SaveChanges();
+                            }
+                            else
+                            {
+                                rcon.Kick(ent.PlayerId);
+                            }
+                        }
+                        db.Dispose();
+                    }
                     qrcon = true;
                 }
             }
@@ -482,10 +501,6 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
         }
-        private void GetBotPilot()
-        {
-
-        }
         private List<PlaneSet> GetPlaneSet()
         {
             ExpertDB db = new ExpertDB();
@@ -602,6 +617,12 @@ namespace Il_2.Commander.Commander
             bool updateTarget = false;
             for (int i = 0; i < str.Count; i++)
             {
+                if (str[i].Contains("AType:20 "))
+                {
+                    AType20 aType = new AType20(str[i]);
+                    RconCommand wrap = new RconCommand(Rcontype.CheckBans, aType);
+                    RconCommands.Enqueue(wrap);
+                }
                 if (str[i].Contains("AType:10 "))
                 {
                     AType10 aType = new AType10(str[i]);

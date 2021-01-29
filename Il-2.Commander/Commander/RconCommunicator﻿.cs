@@ -135,6 +135,13 @@ namespace Il_2.Commander.Commander
             Execute(commonstr);
             return lastCommandResult;
         }
+        public void Kick (string PlayerId)
+        {
+            string commonstr = "kick " + "playerid " + PlayerId;
+            //command += commonstr;
+            //command += value;
+            Execute(commonstr);
+        }
         public string UnbanAll()
         {
             //cmd: unbanall 
