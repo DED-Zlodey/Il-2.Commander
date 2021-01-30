@@ -1097,14 +1097,14 @@ namespace Il_2.Commander.Commander
                 double max = 0.1;
                 if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
                 {
-                    bool eneble = false;
+                    bool enable = false;
                     var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
                     var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
                     if (entON.Enable == 1)
                     {
                         if (item.InernalWeight > item.Destroed)
                         {
-                            eneble = true;
+                            enable = true;
                             int destroy = item.Destroed + 1;
                             targets.First(x => x.id == item.id).Destroed = destroy;
                             db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
@@ -1145,7 +1145,7 @@ namespace Il_2.Commander.Commander
                                 RconCommands.Enqueue(sendall);
                                 RconCommands.Enqueue(sendred);
                                 RconCommands.Enqueue(sendblue);
-                                eneble = true;
+                                enable = true;
                             }
                         }
                         db.SaveChanges();
@@ -1158,7 +1158,7 @@ namespace Il_2.Commander.Commander
                             SetAttackPoint(invcoal);
                             EnableTargetsToCoalition(invcoal);
                         }
-                        if (eneble)
+                        if (enable)
                         {
                             output = true;
                             break;
