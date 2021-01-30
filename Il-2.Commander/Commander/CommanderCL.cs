@@ -179,7 +179,6 @@ namespace Il_2.Commander.Commander
                                 var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
                                 if (locpilot.Player == null)
                                 {
-                                    //CheckRegistration(player);
                                     pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
                                 }
                                 else
@@ -951,6 +950,10 @@ namespace Il_2.Commander.Commander
                                 });
                             }
                             db.SaveChanges();
+                            if(messenger != null)
+                            {
+                                messenger.SpecSend("FrontLine");
+                            }
                         }
                     }
                 }
