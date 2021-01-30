@@ -235,10 +235,11 @@ namespace Il_2.Commander.Commander
                                             var mess = "-=COMMANDER=- " + player.Name + " Take-off is allowed.";
                                             RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                             RconCommands.Enqueue(wrap);
+                                            GetLogStr(mess, Color.Indigo);
                                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                             {
-                                                var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
-                                                if (locpilot.Player == null)
+                                                var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
+                                                if (locpilot != null)
                                                 {
                                                     pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                                 }
@@ -254,12 +255,13 @@ namespace Il_2.Commander.Commander
                                             var mess = "-=COMMANDER=- " + player.Name + " You chose the wrong coalition. Take-off is PROHIBITED!!!";
                                             RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                             RconCommands.Enqueue(wrap);
+                                            GetLogStr(mess, Color.Indigo);
                                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                             {
-                                                var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
-                                                if (locpilot.Player == null)
+                                                var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
+                                                if (locpilot != null)
                                                 {
-                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
+                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                                 }
                                             }
                                         }
@@ -274,10 +276,11 @@ namespace Il_2.Commander.Commander
                                         var mess = "-=COMMANDER=- " + player.Name + " You didn't choose a coalition. Take-off is PROHIBITED!!!";
                                         RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                         RconCommands.Enqueue(wrap);
+                                        GetLogStr(mess, Color.Indigo);
                                         if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                         {
-                                            var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
-                                            if (locpilot.Player == null)
+                                            var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
+                                            if (locpilot != null)
                                             {
                                                 pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                             }
@@ -294,10 +297,11 @@ namespace Il_2.Commander.Commander
                                     var mess = "-=COMMANDER=- " + player.Name + " You are not registered on the site. Take-off is PROHIBITED!!!";
                                     RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                     RconCommands.Enqueue(wrap);
+                                    GetLogStr(mess, Color.Indigo);
                                     if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                     {
-                                        var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
-                                        if (locpilot.Player == null)
+                                        var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
+                                        if (locpilot != null)
                                         {
                                             pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                         }
