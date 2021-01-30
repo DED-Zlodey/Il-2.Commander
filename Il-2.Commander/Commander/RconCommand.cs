@@ -10,6 +10,7 @@ namespace Il_2.Commander.Commander
         public int RecipientId { get; private set; }
         public AType10 aType { get; private set; }
         public AType20 Bans { get; private set; }
+        public AType5 TakeOffForbiden { get; private set; }
 
         public RconCommand(Rcontype rtype, RoomType roomType, string mess, int recip)
         {
@@ -39,6 +40,11 @@ namespace Il_2.Commander.Commander
         {
             Type = rtype;
         }
+        public RconCommand(Rcontype rtype, AType5 aType)
+        {
+            Type = rtype;
+            TakeOffForbiden = aType;
+        }
     }
     enum Rcontype
     {
@@ -46,6 +52,8 @@ namespace Il_2.Commander.Commander
         ChatMsg = 2,
         Players = 3,
         ReSetSPS = 4,
-        CheckBans = 5
+        CheckBans = 5,
+        CheckRegistration = 6,
+        Kick = 7
     }
 }

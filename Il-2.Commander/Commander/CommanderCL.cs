@@ -179,7 +179,7 @@ namespace Il_2.Commander.Commander
                                 var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
                                 if (locpilot.Player == null)
                                 {
-                                    CheckRegistration(player);
+                                    //CheckRegistration(player);
                                     pilotsList.First(x => x.LOGIN == player.PlayerId).Player = player;
                                 }
                                 else
@@ -196,14 +196,14 @@ namespace Il_2.Commander.Commander
                         rcon.ResetSPS();
                         GetLogStr("Reset SPS: " + DateTime.Now.ToLongTimeString(), myRgbColor);
                     }
-                    if(result != null && result.Type == Rcontype.CheckBans)
+                    if (result != null && result.Type == Rcontype.CheckBans)
                     {
                         ExpertDB db = new ExpertDB();
                         var ent = db.BanList.FirstOrDefault(x => x.PlayerId == result.Bans.USERID);
-                        if(ent != null)
+                        if (ent != null)
                         {
                             var DateEndBan = ent.CreateDate.AddHours(ent.HoursBan);
-                            if(DateEndBan <= DateTime.Now)
+                            if (DateEndBan <= DateTime.Now)
                             {
                                 db.BanList.Remove(ent);
                                 db.SaveChanges();
@@ -211,9 +211,118 @@ namespace Il_2.Commander.Commander
                             else
                             {
                                 rcon.Kick(ent.PlayerId);
+                                GetLogStr("Pilot BANNED: " + ent.PilotName, Color.Red);
                             }
                         }
                         db.Dispose();
+                    }
+                    if (result != null && result.Type == Rcontype.CheckRegistration)
+                    {
+                        ExpertDB db = new ExpertDB();
+                        if (result.aType != null)
+                        {
+                            var profile = db.ProfileUser.FirstOrDefault(x => x.GameId == result.aType.LOGIN);
+                            if (profile != null)
+                            {
+                                if (profile.Coalition > 0)
+                                {
+                                    if (profile.Coalition == result.aType.COUNTRY)
+                                    {
+                                        var players = rcon.GetPlayerList();
+                                        var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                        if (player != null)
+                                        {
+                                            var mess = "-=COMMANDER=- " + player.Name + " Take-off is allowed.";
+                                            RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                            RconCommands.Enqueue(wrap);
+                                            if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                                            {
+                                                var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
+                                                if (locpilot.Player == null)
+                                                {
+                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var players = rcon.GetPlayerList();
+                                        var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                        if (player != null)
+                                        {
+                                            var mess = "-=COMMANDER=- " + player.Name + " You chose the wrong coalition. Take-off is PROHIBITED!!!";
+                                            RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                            RconCommands.Enqueue(wrap);
+                                            if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                                            {
+                                                var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
+                                                if (locpilot.Player == null)
+                                                {
+                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    var players = rcon.GetPlayerList();
+                                    var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                    if (player != null)
+                                    {
+                                        var mess = "-=COMMANDER=- " + player.Name + " You didn't choose a coalition. Take-off is PROHIBITED!!!";
+                                        RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                        RconCommands.Enqueue(wrap);
+                                        if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                                        {
+                                            var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
+                                            if (locpilot.Player == null)
+                                            {
+                                                pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var players = rcon.GetPlayerList();
+                                var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                if (player != null)
+                                {
+                                    var mess = "-=COMMANDER=- " + player.Name + " You are not registered on the site. Take-off is PROHIBITED!!!";
+                                    RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                    RconCommands.Enqueue(wrap);
+                                    if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                                    {
+                                        var locpilot = pilotsList.First(x => x.LOGIN == player.PlayerId);
+                                        if (locpilot.Player == null)
+                                        {
+                                            pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (result.Bans != null)
+                        {
+                            var players = rcon.GetPlayerList();
+                            var player = players.FirstOrDefault(x => x.PlayerId == result.Bans.USERID);
+                            if (player != null)
+                            {
+                                CheckRegistration(player);
+                            }
+                        }
+                        db.Dispose();
+                    }
+                    if (result != null && result.Type == Rcontype.Kick)
+                    {
+                        if (result.aType != null)
+                        {
+                            rcon.Kick(result.aType.LOGIN);
+                            GetLogStr("Pilot Kicked: " + result.aType.NAME, Color.Red);
+                        }
                     }
                     qrcon = true;
                 }
@@ -622,12 +731,16 @@ namespace Il_2.Commander.Commander
                     AType20 aType = new AType20(str[i]);
                     RconCommand wrap = new RconCommand(Rcontype.CheckBans, aType);
                     RconCommands.Enqueue(wrap);
+                    RconCommand wrap1 = new RconCommand(Rcontype.CheckRegistration, aType);
+                    RconCommands.Enqueue(wrap1);
                 }
                 if (str[i].Contains("AType:10 "))
                 {
                     AType10 aType = new AType10(str[i]);
                     RconCommand wrap = new RconCommand(Rcontype.Players, aType);
                     RconCommands.Enqueue(wrap);
+                    RconCommand wrap1 = new RconCommand(Rcontype.CheckRegistration, aType);
+                    RconCommands.Enqueue(wrap1);
                     if (aType.TYPE.Contains("Ju 52 3mg4e"))
                     {
                         var planeName = AllLogs.FindLast(x => x.ID == aType.PLID).NAME;
@@ -685,11 +798,20 @@ namespace Il_2.Commander.Commander
                     var aType = new AType5(str[i]);
                     if (pilotsList.Exists(x => x.PLID == aType.PID))
                     {
-                        pilotsList.First(x => x.PLID == aType.PID).GameStatus = GameStatusPilot.InFlight.ToString();
-                        var playerid = pilotsList.First(x => x.PLID == aType.PID).LOGIN;
-                        if (onlinePlayers.Exists(x => x.PlayerId == playerid))
+                        var pilot = pilotsList.First(x => x.PLID == aType.PID);
+                        if(!pilot.TakeOffAllowed)
                         {
-                            onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
+                            RconCommand wrap = new RconCommand(Rcontype.Kick, pilot);
+                            RconCommands.Enqueue(wrap);
+                        }
+                        else
+                        {
+                            pilotsList.First(x => x.PLID == aType.PID).GameStatus = GameStatusPilot.InFlight.ToString();
+                            var playerid = pilotsList.First(x => x.PLID == aType.PID).LOGIN;
+                            if (onlinePlayers.Exists(x => x.PlayerId == playerid))
+                            {
+                                onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
+                            }
                         }
                     }
                     if (airSupplies.Exists(x => x.Pilot.PLID == aType.PID))
@@ -1980,10 +2102,10 @@ namespace Il_2.Commander.Commander
             {
                 UnlockCauldron.Clear();
             }
-            if(Planeset.Count > 0)
+            if (Planeset.Count > 0)
             {
                 Planeset.Clear();
-            }    
+            }
         }
         /// <summary>
         /// Фиксирует завершение миссии в базе данных. Если миссий впереди не осталось, вызывает ReSetCompany
