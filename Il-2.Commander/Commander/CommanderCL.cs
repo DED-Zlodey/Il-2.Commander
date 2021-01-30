@@ -1149,7 +1149,7 @@ namespace Il_2.Commander.Commander
                             }
                         }
                         db.SaveChanges();
-                        var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1 && x.GroupInput != 14).ToList();
+                        var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1 && x.GroupInput != 14 && x.GroupInput != 15).ToList();
                         db.Dispose();
                         if (alltargets.Count == 0)
                         {
