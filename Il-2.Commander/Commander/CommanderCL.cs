@@ -1594,6 +1594,12 @@ namespace Il_2.Commander.Commander
             db.SaveChanges();
             db.Dispose();
         }
+        /// <summary>
+        /// Обработка события "смерти". Вернет true если найдено что-то уничтоженное в составе полевых складов и false если полевые склады не повреждены. Если уничтождение полевого склада обнаружено, обработает
+        /// это уничтожение, запишет в БД всю актуальную информацию.
+        /// </summary>
+        /// <param name="aType"></param>
+        /// <returns>Вернет true если найдено что-то уничтоженное в составе полевых складов и false если полевые склады не повреждены</returns>
         private bool HandlingForWH(AType3 aType)
         {
             ExpertDB db = new ExpertDB();
