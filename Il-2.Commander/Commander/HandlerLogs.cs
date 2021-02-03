@@ -25,6 +25,7 @@ namespace Il_2.Commander.Commander
 
         #region Регулярки
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
+        private static Regex reg_mfile = new Regex(@"(?<=MFile:).*?(?=.msnbin)");
         #endregion
 
         public void Start()
@@ -82,6 +83,12 @@ namespace Il_2.Commander.Commander
             var str = SetApp.GetFile(path);
             for (int i = 0; i < str.Count; i++)
             {
+                if(str[i].Contains("AType:0 "))
+                {
+                    var result = reg_mfile.Match(str[i]).Value;
+                    var actualres = result.Replace(".", "-");
+                    str[i] = str[i].Replace(result, actualres);
+                }
                 if (str[i].Contains("AType:9 "))
                 {
                     ReWriteAType9(str, i, str[i], path);
