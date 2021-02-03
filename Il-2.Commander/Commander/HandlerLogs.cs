@@ -9,10 +9,20 @@ using System.Threading.Tasks;
 
 namespace Il_2.Commander.Commander
 {
+    /// <summary>
+    /// Делегат. Выводит номер лога.
+    /// </summary>
+    /// <param name="e">номер лога-файла</param>
     public delegate void EventFirstLog(int e);
     class HandlerLogs
     {
+        /// <summary>
+        /// Событие сообщает всем подписавшимся о том, что первый лог-файл только что получен.
+        /// </summary>
         public event EventFirstLog EvLog;
+        /// <summary>
+        /// Объект мониторинга директирии
+        /// </summary>
         private Watcher watcher;
         /// <summary>
         /// Очередь из лог-файлов
