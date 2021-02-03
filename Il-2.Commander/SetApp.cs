@@ -9,6 +9,9 @@ namespace Il_2.Commander
 {
     public static class SetApp
     {
+        /// <summary>
+        /// Конфиг коммандера
+        /// </summary>
         public static ConfigJson Config { get; private set; }
 
         /// <summary>

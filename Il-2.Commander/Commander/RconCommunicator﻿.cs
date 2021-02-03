@@ -7,25 +7,49 @@ namespace Il_2.Commander.Commander
 {
     class RconCommunicator﻿
     {
+        /// <summary>
+        /// Объект для TCP соединений
+        /// </summary>
         private TcpConnec﻿tor connection;
-
+        /// <summary>
+        /// Крайний статус-код
+        /// </summary>
         public StatusCod﻿e lastCommandStatus { get; private set; }
+        /// <summary>
+        /// Результат отправки последней ркон команды ДСерверу
+        /// </summary>
         public string las﻿﻿tCommandResult { get; private set; }
+        /// <summary>
+        /// Список пилотов онлайн полученный ркон запросом на ДСервер
+        /// </summary>
         public List<Player> Players { get; private set; }
-
+        /// <summary>
+        /// Конструктор по умолчания. Инициализирует переменную с пилотами онлайн
+        /// </summary>
         public RconCommunicator()
         {
             Players = new List<Player>();
         }
+        /// <summary>
+        /// Разрывает соединение с ДСервром.
+        /// </summary>
         public void DisConnectServer()
         {
             connection.Dispose();
         }
+        /// <summary>
+        /// Устанавливает TCP связь с ДСервером
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="port"></param>
         public void ConnectServer(string host, ushort port)
         {
             connection = new TcpConnector(host, port);
         }
-
+        /// <summary>
+        /// Основной метод выполнения ркон команд
+        /// </summary>
+        /// <param name="cmd">Команда в формате строки</param>
         private void Execute(string cmd)
         {
             string response = connection.ExecuteCommand(cmd);
@@ -40,26 +64,28 @@ namespace Il_2.Commander.Commander
             lastCommandResult = Uri.UnescapeDataString(arr[1]);
 
         }
-        private string GetResponse(string cmd)
-        {
-            string response = connection.ExecuteCommand(cmd);
-            string[] arr = { response, "" };
-            if (response.Contains('&'))
-            {
-                arr = response.Split('&');
-            }
-            return Uri.UnescapeDataString(arr[1]);
-        }
+        /// <summary>
+        /// Завершает текущую миссии (если таковая есть) и запускает новую с параметрами из фала .sds
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <returns></returns>
         public string OpenSDS(string cmd)
         {
             string command = "opensds " + cmd;
             return connection.ExecuteCommand(command);
         }
+        /// <summary>
+        /// Сброс SPS.
+        /// </summary>
+        /// <returns></returns>
         public string ResetSPS()
         {
             return connection.ExecuteCommand("spsreset");
         }
-
+        /// <summary>
+        /// Возвращает статус авторизации. 1 если авторизован и 0 если нет.
+        /// </summary>
+        /// <returns></returns>
         public string My﻿Status()
         {
             //cmd: mystatus (no parameters)
@@ -68,13 +94,21 @@ namespace Il_2.Commander.Commander
             Execute(command);
             return lastCommandResult;
         }
+        /// <summary>
+        /// Выключение сервера.
+        /// </summary>
         public void Shutdown()
         {
             string command = "shutdown";
             connection.ExecuteCommand(command);
             DisConnectServer();
         }
-
+        /// <summary>
+        /// Авторизация. Для отправки большинства команд необходима авторизация.
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
         public string Auth(string user, string password)
         {
             //cmd: auth e-mail password
@@ -83,16 +117,10 @@ namespace Il_2.Commander.Commander
             //Execute(command);
             return connection.ExecuteCommand(command);
         }
-
-        public string GetConsole()
-        {
-            //cmd: getconsole
-            //response exampl﻿e: STATUS=1&console=
-            string command = "getconsole";
-            //Execute(command);
-            return GetResponse(command);
-        }
-
+        /// <summary>
+        /// Получает список пилотов онлайн
+        /// </summary>
+        /// <returns></returns>
         public List<Player> GetPlayerList()
         {
             string command = "getplayerlist";
@@ -107,6 +135,11 @@ namespace Il_2.Commander.Commander
             }
             return Players;
         }
+        /// <summary>
+        /// Возвращает игровой стату пилота
+        /// </summary>
+        /// <param name="status"></param>
+        /// <returns>Возвращает игровой стату пилота</returns>
         private string GetGameStatus(string status)
         {
             if (int.Parse(status) == 0)
@@ -118,23 +151,10 @@ namespace Il_2.Commander.Commander
                 return GameStatusPilot.Spectator.ToString();
             }
         }
-        public string Server﻿﻿Status()
-        {
-            //cmd: serverstatus
-            //response example: STATUS=1
-            string command = "serverstatus";
-            //Execute(command);
-            return connection.ExecuteCommand(command);
-        }
-
-        public string Kick(Player player, string value)
-        {
-            string commonstr = "kick " + "playerid " + player.PlayerId;
-            //command += commonstr;
-            //command += value;
-            Execute(commonstr);
-            return lastCommandResult;
-        }
+        /// <summary>
+        /// Выкидывает игрока с сервера
+        /// </summary>
+        /// <param name="PlayerId"></param>
         public void Kick (string PlayerId)
         {
             string commonstr = "kick " + "playerid " + PlayerId;
@@ -142,15 +162,11 @@ namespace Il_2.Commander.Commander
             //command += value;
             Execute(commonstr);
         }
-        public string UnbanAll()
-        {
-            //cmd: unbanall 
-            //response example: STATUS=1
-            string command = "unbanall";
-            Execute(co﻿mmand);
-            return lastCommandResult;
-        }
-
+        /// <summary>
+        /// Отправляет кмоанду ServerInput для инициирования какой-либо игровой логики.
+        /// </summary>
+        /// <param name="translatorName"></param>
+        /// <returns></returns>
         public string ServerInput(string translatorName)
         {
             //cmd: serverin﻿put translator_name
@@ -159,25 +175,13 @@ namespace Il_2.Commander.Commander
             Execute(co﻿mmand);
             return lastCommandResult;
         }
-
-        public string SendStatNow()
-        {
-            //cmd: sendstatnow 
-            //response example: STATUS=1
-            string command = "sendstatnow";
-            Execute(co﻿﻿mmand);
-            return lastCommandResult;
-        }
-
-        public string CutChatLog()
-        {
-            //cmd: cutchatlog
-            //response exam﻿ple: STATUS=1
-            string command = "cutchatlog";
-            Execute(command);
-            return lastCommandResult;
-        }
-
+        /// <summary>
+        /// Отправка сообщений на сервер.
+        /// </summary>
+        /// <param name="roomType"></param>
+        /// <param name="message"></param>
+        /// <param name="recipientId"></param>
+        /// <returns></returns>
         public string ChatMsg(RoomType roomType, string message, int recipientId)
         {
             //cmd: chatmsg roomtype id Message to send
@@ -207,6 +211,9 @@ namespace Il_2.Commander.Commander
             return lastCommandResult;
         }
     }
+    /// <summary>
+    /// Статус-коды состояния сервера
+    /// </summary>
     public enum StatusCode
     {
         RCR_OK = 1,
@@ -219,6 +226,9 @@ namespace Il_2.Commander.Commander
         RCR_ERR_SERVER_USER = 8,
         RCR_ERR_UNKNOWN_USER = 9,
     }
+    /// <summary>
+    /// Комнаты для отправки сообщений
+    /// </summary>
     public enum RoomType
     {
         All = 0,

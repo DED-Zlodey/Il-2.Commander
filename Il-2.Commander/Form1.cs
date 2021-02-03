@@ -49,12 +49,17 @@ namespace Il_2.Commander
                 Task taskstartgen = Task.Factory.StartNew(strtfirstlog);
             }
         }
-
+        /// <summary>
+        /// Меняет текст в лейбле label_status
+        /// </summary>
         private void Commander_SetChangeLog()
         {
             BeginInvoke((MethodInvoker)(() => label_status.Text = "Status True"));
         }
-
+        /// <summary>
+        /// Выводит список строк
+        /// </summary>
+        /// <param name="array"></param>
         private void Commander_GetLogArray(string[] array)
         {
             var counter = lvLog.Items.Count;
@@ -75,7 +80,11 @@ namespace Il_2.Commander
             }
             BeginInvoke((MethodInvoker)(() => lvLog.Items[lvLog.Items.Count - 1].EnsureVisible()));
         }
-
+        /// <summary>
+        /// Выводит строку текста и меняет цвет текста на указанный
+        /// </summary>
+        /// <param name="Message">Строка текст</param>
+        /// <param name="color">Цвет</param>
         private void Commander_GetLogStr(string Message, Color color)
         {
             var counter = lvLog.Items.Count;
@@ -93,7 +102,6 @@ namespace Il_2.Commander
             BeginInvoke((MethodInvoker)(() => lvLog.Items.Add(lvi)));
             BeginInvoke((MethodInvoker)(() => lvLog.Items[lvLog.Items.Count - 1].EnsureVisible()));
         }
-
         /// <summary>
         /// Старт таймера для разработки плана наступления в следующей миссии
         /// </summary>
@@ -102,6 +110,11 @@ namespace Il_2.Commander
         {
             BeginInvoke((MethodInvoker)(() => timerOfficer.Start()));
         }
+        /// <summary>
+        /// Кнопка ручного запуска генерации миссии
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btn_StartGen_Click(object sender, EventArgs e)
         {
             btn_Stop.Enabled = false;
@@ -110,7 +123,11 @@ namespace Il_2.Commander
             btn_StartPredGen.Enabled = false;
             StartGeneration();
         }
-
+        /// <summary>
+        /// Кнопка запуска сервера
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btn_Start_Click(object sender, EventArgs e)
         {
             btn_Stop.Enabled = true;
@@ -129,7 +146,11 @@ namespace Il_2.Commander
             };
             Task TasksStartHandlerLogs = Task.Factory.StartNew(StartHandlerLog);
         }
-
+        /// <summary>
+        /// Кнопка остановки сервера
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btn_Stop_Click(object sender, EventArgs e)
         {
             btn_Stop.Enabled = false;
@@ -147,7 +168,11 @@ namespace Il_2.Commander
             };
             Task TasksStopHandlerLogs = Task.Factory.StartNew(StopHandlerLog);
         }
-
+        /// <summary>
+        /// Кнопка ручного запуска предварительной генерации
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btn_StartPredGen_Click(object sender, EventArgs e)
         {
             btn_Stop.Enabled = false;
@@ -156,7 +181,11 @@ namespace Il_2.Commander
             btn_StartPredGen.Enabled = false;
             StartGeneration("pregen");
         }
-
+        /// <summary>
+        /// Запуск обработки направлений атак созданных пользователем и остановка таймера планирования атак.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void timerOfficer_Tick(object sender, EventArgs e)
         {
             Action startgen = () =>
@@ -166,7 +195,11 @@ namespace Il_2.Commander
             Task taskstartgen = Task.Factory.StartNew(startgen);
             BeginInvoke((MethodInvoker)(() => timerOfficer.Stop()));
         }
-
+        /// <summary>
+        /// Обработка очереди лог-файлов
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void timerRcon_Tick(object sender, EventArgs e)
         {
             if (busy)
@@ -202,12 +235,15 @@ namespace Il_2.Commander
                 Task taskstartgen = Task.Factory.StartNew(startgen);
             }
         }
-
+        /// <summary>
+        /// Вызывается при изменении размеров окна программы. Задает размер колонок в окне согласно размеру окна (во всю ширину)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
             lvLog.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
-
         /// <summary>
         /// Запускает предварительную генерацию миссии.
         /// </summary>

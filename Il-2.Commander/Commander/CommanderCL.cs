@@ -16,14 +16,41 @@ namespace Il_2.Commander.Commander
     public delegate void ChangeLog();
     class CommanderCL
     {
+        /// <summary>
+        /// Событие для передачи строки на форму
+        /// </summary>
         public event EventLog GetLogStr;
+        /// <summary>
+        /// Событие старта планирования атаки на следующую миссию
+        /// </summary>
         public event EventLog GetOfficerTime;
+        /// <summary>
+        /// Событие передачи массива строк на форму
+        /// </summary>
         public event EventLogArray GetLogArray;
+        /// <summary>
+        /// Событие завершения обработки лог фала
+        /// </summary>
         public event ChangeLog SetChangeLog;
+        /// <summary>
+        /// Объект для работы с РКон командами
+        /// </summary>
         private static RconCommunicator rcon;
+        /// <summary>
+        /// Случайности))
+        /// </summary>
         private static Random random = new Random();
+        /// <summary>
+        /// Хаб
+        /// </summary>
         private HubMessenger messenger;
+        /// <summary>
+        /// Процесс генератора
+        /// </summary>
         private Process processGenerator;
+        /// <summary>
+        /// Процесс ДСервера
+        /// </summary>
         private Process processDS;
         /// <summary>
         /// Очередь Ркон комманд
@@ -99,10 +126,25 @@ namespace Il_2.Commander.Commander
         /// Имя текущей миссии.
         /// </summary>
         private string NameMission = string.Empty;
+        /// <summary>
+        /// Дата на текущий момент времени
+        /// </summary>
         private DateTime dt = DateTime.Now;
+        /// <summary>
+        /// Дата завершения миссии
+        /// </summary>
         private DateTime messDurTime = DateTime.Now;
+        /// <summary>
+        /// Длительность отсечки, после последнего сообщения об остатке времени до конца миссии, в минутах
+        /// </summary>
         private int durmess = 30;
-        private int DurationMission = 235; // Длительность миссии в минутах
+        /// <summary>
+        /// Длительность миссии в минутах
+        /// </summary>
+        private int DurationMission = 235;
+        /// <summary>
+        /// Если true, можно обрабатывать очередь РКон команд, если fakse нельзя.
+        /// </summary>
         bool qrcon = true;
         /// <summary>
         /// Список пилотов
@@ -112,6 +154,9 @@ namespace Il_2.Commander.Commander
         /// Список пилотов онлайн
         /// </summary>
         private List<Player> onlinePlayers = new List<Player>();
+        /// <summary>
+        /// Игровая дата
+        /// </summary>
         private string GameDate = string.Empty;
 
         #region Регулярки
@@ -612,6 +657,10 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
         }
+        /// <summary>
+        /// Получает сетап самолетов из базы данных
+        /// </summary>
+        /// <returns>Возвращает список самолетов</returns>
         private List<PlaneSet> GetPlaneSet()
         {
             ExpertDB db = new ExpertDB();
@@ -619,6 +668,9 @@ namespace Il_2.Commander.Commander
             db.Dispose();
             return planeset;
         }
+        /// <summary>
+        /// Включает танковые батальоны (эксперементально)
+        /// </summary>
         private void EnableTankBat()
         {
             ExpertDB db = new ExpertDB();
@@ -641,6 +693,10 @@ namespace Il_2.Commander.Commander
             db.SaveChanges();
             db.Dispose();
         }
+        /// <summary>
+        /// Задает текущую игровую фазу, записывает значение фазы и отправляет ее значение в хаб для отображения всем пользователям о текущем состоянии игры.
+        /// </summary>
+        /// <param name="phase">Принимает номер фазы</param>
         private void SetPhase(int phase)
         {
             string mess = string.Empty;
@@ -1365,6 +1421,12 @@ namespace Il_2.Commander.Commander
             db.SaveChanges();
             db.Dispose();
         }
+        /// <summary>
+        /// Возвращает текущее количество ресурсов на определенном полевом складе
+        /// </summary>
+        /// <param name="numtarget">Номер полевого склада</param>
+        /// <param name="coal">Номер коалиции полевого склада</param>
+        /// <returns>Возвращает текущее количество ресурсов на полевом складе</returns>
         private BattlePonts GetBP(int numtarget, int coal)
         {
             ExpertDB db = new ExpertDB();
@@ -1417,6 +1479,9 @@ namespace Il_2.Commander.Commander
             db.Dispose();
             return bp;
         }
+        /// <summary>
+        /// Получает из базы данны направления атак и формирует очередность включения целей на точках, которые входят в направление атаки. Так же инициализирует список инпутов мостов.
+        /// </summary>
         private void InitDirectPoints()
         {
             ExpertDB db = new ExpertDB();
@@ -1733,7 +1798,7 @@ namespace Il_2.Commander.Commander
             messenger.SpecSend("Timer");
         }
         /// <summary>
-        /// Снабжение котлов
+        /// Общий метод снабжения котлов
         /// </summary>
         /// <param name="type6">Событие посадки</param>
         /// <param name="pilot">Пилот</param>
@@ -1744,6 +1809,12 @@ namespace Il_2.Commander.Commander
                 AddSupplyPointForPilot(type6, pilot);
             }
         }
+        /// <summary>
+        /// Снабжение пилотом точки котла
+        /// </summary>
+        /// <param name="type6">Событие посадки</param>
+        /// <param name="pilot">Пилот</param>
+        /// <returns>Возвращает true если снабжение населенного пункта состоялось, false если не состоялось</returns>
         private bool AddSupplyPointForCauldron(AType6 type6, AType10 pilot)
         {
             ExpertDB db = new ExpertDB();
@@ -1803,6 +1874,12 @@ namespace Il_2.Commander.Commander
             db.Dispose();
             return false;
         }
+        /// <summary>
+        /// Загрузка грузов в самолет пилота если тот сел на союзный аэродром (исключение аэродромы в котлах)
+        /// </summary>
+        /// <param name="type6">Событие посадки</param>
+        /// <param name="pilot">Пилот</param>
+        /// <returns>Возвращает true если загрузка самолета игрока грузом состоялась, false если не состоялась</returns>
         private bool AddSupplyPointForPilot(AType6 type6, AType10 pilot)
         {
             ExpertDB db = new ExpertDB();
@@ -1963,6 +2040,10 @@ namespace Il_2.Commander.Commander
             }
             db.Dispose();
         }
+        /// <summary>
+        /// Списывает ресурсы со складов определенной коалиции
+        /// </summary>
+        /// <param name="coal"></param>
         private void MinusResourceWH(int coal)
         {
             ExpertDB db = new ExpertDB();
@@ -2132,6 +2213,9 @@ namespace Il_2.Commander.Commander
             }
             db.Dispose();
         }
+        /// <summary>
+        /// Обновление списка пользователей онлайн
+        /// </summary>
         private void UpdateCurrentPlayers()
         {
             if (rcon != null && qrcon)
@@ -2170,6 +2254,9 @@ namespace Il_2.Commander.Commander
                 qrcon = true;
             }
         }
+        /// <summary>
+        /// Обновления таблицы БД со списком пользователей онлайн
+        /// </summary>
         private void UpdateDBPlayerList()
         {
             ExpertDB db = new ExpertDB();
@@ -2443,10 +2530,22 @@ namespace Il_2.Commander.Commander
             db.Dispose();
         }
     }
+    /// <summary>
+    /// Типы колонн техники
+    /// </summary>
     enum TypeColumn
     {
+        /// <summary>
+        /// Танковая колонна
+        /// </summary>
         Armour = 1,
+        /// <summary>
+        /// Колонна бронированной и не бронированной техники
+        /// </summary>
         Mixed = 2,
+        /// <summary>
+        /// Колонна не бронированной техники
+        /// </summary>
         Transport = 3
     }
 }
