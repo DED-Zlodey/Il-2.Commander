@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace Il_2.Commander.Commander
 {
@@ -537,7 +536,7 @@ namespace Il_2.Commander.Commander
             var actualMissId = db.PreSetupMap.Where(x => x.idServ == srv && x.idMap == 2 && x.Played == false).Min(x => x.id);
             var ent = db.PreSetupMap.First(x => x.id == actualMissId);
             GameDate = ent.GameDate;
-            var output = db.PreSetupMap.First(x => x.id == actualMissId).NameMiss;
+            var output = "Stalingrad-" + ent.GameDate;
             db.Dispose();
             return output;
         }
