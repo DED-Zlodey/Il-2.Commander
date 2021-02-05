@@ -25,7 +25,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private Watcher watcher;
         /// <summary>
-        /// Очередь из лог-файлов
+        /// Очередь из лог-файлов, каждый лог-файл представлен отдельным списком строк.
         /// </summary>
         public static Queue<List<string>> qLog = new Queue<List<string>>();
         /// <summary>

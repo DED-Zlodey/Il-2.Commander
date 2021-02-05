@@ -121,6 +121,10 @@ namespace Il_2.Commander.Commander
         /// Список самолетов
         /// </summary>
         private List<PlaneSet> Planeset;
+        /// <summary>
+        /// Список активных аэродромов в миссии
+        /// </summary>
+        private List<ATC> ActiveFields = new List<ATC>();
 
         /// <summary>
         /// Имя текущей миссии.
@@ -287,6 +291,43 @@ namespace Il_2.Commander.Commander
                                                     pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                                 }
                                             }
+                                            int coal = 0;
+                                            if (result.aType.COUNTRY == 101)
+                                            {
+                                                coal = 1;
+                                            }
+                                            if (result.aType.COUNTRY == 201)
+                                            {
+                                                coal = 2;
+                                            }
+                                            var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
+                                            var enATC = GetMinDistanceForATC(result.aType, "en-US");
+                                            db.Speech.Add(new Speech
+                                            {
+                                                Coalition = coal,
+                                                CreateDate = DateTime.Now,
+                                                Emotion = "good",
+                                                Frequency = 252,
+                                                Lang = "ru-RU",
+                                                NameSpeaker = ruATC.WhosTalking,
+                                                RecipientMessage = result.aType.NAME,
+                                                Speed = 1.1,
+                                                Voice = ruATC.VoiceName,
+                                                Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет разрешаю! Удачи в небе!",
+                                            });
+                                            db.Speech.Add(new Speech
+                                            {
+                                                Coalition = coal,
+                                                CreateDate = DateTime.Now,
+                                                Emotion = "good",
+                                                Frequency = 251,
+                                                Lang = "en-US",
+                                                NameSpeaker = enATC.WhosTalking,
+                                                RecipientMessage = result.aType.NAME,
+                                                Speed = 1.1,
+                                                Voice = enATC.VoiceName,
+                                                Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i allow takeoff! Good luck in the sky!",
+                                            });
                                         }
                                     }
                                     else
@@ -307,6 +348,43 @@ namespace Il_2.Commander.Commander
                                                     pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                                 }
                                             }
+                                            int coal = 0;
+                                            if (result.aType.COUNTRY == 101)
+                                            {
+                                                coal = 1;
+                                            }
+                                            if (result.aType.COUNTRY == 201)
+                                            {
+                                                coal = 2;
+                                            }
+                                            var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
+                                            var enATC = GetMinDistanceForATC(result.aType, "en-US");
+                                            db.Speech.Add(new Speech
+                                            {
+                                                Coalition = coal,
+                                                CreateDate = DateTime.Now,
+                                                Emotion = "evil",
+                                                Frequency = 252,
+                                                Lang = "ru-RU",
+                                                NameSpeaker = ruATC.WhosTalking,
+                                                RecipientMessage = result.aType.NAME,
+                                                Speed = 1.1,
+                                                Voice = ruATC.VoiceName,
+                                                Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет запрещаю! Вы не можете летать на стороне врага. Смените коалицию в игре.",
+                                            });
+                                            db.Speech.Add(new Speech
+                                            {
+                                                Coalition = coal,
+                                                CreateDate = DateTime.Now,
+                                                Emotion = "evil",
+                                                Frequency = 251,
+                                                Lang = "en-US",
+                                                NameSpeaker = enATC.WhosTalking,
+                                                RecipientMessage = result.aType.NAME,
+                                                Speed = 1.1,
+                                                Voice = enATC.VoiceName,
+                                                Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i forbid takeoff! You can't fly on the enemy's side. Change the coalition in the game.",
+                                            });
                                         }
                                     }
                                 }
@@ -328,6 +406,43 @@ namespace Il_2.Commander.Commander
                                                 pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                             }
                                         }
+                                        int coal = 0;
+                                        if (result.aType.COUNTRY == 101)
+                                        {
+                                            coal = 1;
+                                        }
+                                        if (result.aType.COUNTRY == 201)
+                                        {
+                                            coal = 2;
+                                        }
+                                        var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
+                                        var enATC = GetMinDistanceForATC(result.aType, "en-US");
+                                        db.Speech.Add(new Speech
+                                        {
+                                            Coalition = coal,
+                                            CreateDate = DateTime.Now,
+                                            Emotion = "evil",
+                                            Frequency = 252,
+                                            Lang = "ru-RU",
+                                            NameSpeaker = ruATC.WhosTalking,
+                                            RecipientMessage = result.aType.NAME,
+                                            Speed = 1.1,
+                                            Voice = ruATC.VoiceName,
+                                            Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет запрещаю! Вам, на веб-сайте, нужно выбрать коалицию.",
+                                        });
+                                        db.Speech.Add(new Speech
+                                        {
+                                            Coalition = coal,
+                                            CreateDate = DateTime.Now,
+                                            Emotion = "evil",
+                                            Frequency = 251,
+                                            Lang = "en-US",
+                                            NameSpeaker = enATC.WhosTalking,
+                                            RecipientMessage = result.aType.NAME,
+                                            Speed = 1.1,
+                                            Voice = enATC.VoiceName,
+                                            Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i forbid takeoff! You, on the website, need to choose a coalition.",
+                                        });
                                     }
                                 }
                             }
@@ -349,6 +464,43 @@ namespace Il_2.Commander.Commander
                                             pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                         }
                                     }
+                                    int coal = 0;
+                                    if (result.aType.COUNTRY == 101)
+                                    {
+                                        coal = 1;
+                                    }
+                                    if (result.aType.COUNTRY == 201)
+                                    {
+                                        coal = 2;
+                                    }
+                                    var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
+                                    var enATC = GetMinDistanceForATC(result.aType, "en-US");
+                                    db.Speech.Add(new Speech
+                                    {
+                                        Coalition = coal,
+                                        CreateDate = DateTime.Now,
+                                        Emotion = "evil",
+                                        Frequency = 252,
+                                        Lang = "ru-RU",
+                                        NameSpeaker = ruATC.WhosTalking,
+                                        RecipientMessage = result.aType.NAME,
+                                        Speed = 1.1,
+                                        Voice = ruATC.VoiceName,
+                                        Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет запрещаю! Ознакомьтесь с брифингом!",
+                                    });
+                                    db.Speech.Add(new Speech
+                                    {
+                                        Coalition = coal,
+                                        CreateDate = DateTime.Now,
+                                        Emotion = "evil",
+                                        Frequency = 251,
+                                        Lang = "en-US",
+                                        NameSpeaker = enATC.WhosTalking,
+                                        RecipientMessage = result.aType.NAME,
+                                        Speed = 1.1,
+                                        Voice = enATC.VoiceName,
+                                        Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i forbid takeoff! Check out the briefing!",
+                                    });
                                 }
                             }
                         }
@@ -361,6 +513,7 @@ namespace Il_2.Commander.Commander
                                 CheckRegistration(player);
                             }
                         }
+                        db.SaveChanges();
                         db.Dispose();
                     }
                     if (result != null && result.Type == Rcontype.Kick)
@@ -504,6 +657,22 @@ namespace Il_2.Commander.Commander
                 SetChangeLog();
             }
         }
+        private ATC GetMinDistanceForATC(AType10 aType, string lang)
+        {
+            var locfields = ActiveFields.Where(x => x.Lang == lang).ToList();
+            var MinDist = double.MaxValue;
+            ATC localATC = new ATC();
+            foreach(var item in locfields)
+            {
+                var dist = SetApp.GetDistance(aType.ZPos, aType.XPos, item.ZPos, item.XPos);
+                if(MinDist > dist)
+                {
+                    MinDist = dist;
+                    localATC = item;
+                }
+            }
+            return localATC;
+        }
         /// <summary>
         /// Приведение базы данных в исходное, стартовое положение. Все инпуты и прочее приводятся в положение "ВЫКЛ"
         /// </summary>
@@ -636,6 +805,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void StartMission()
         {
+            UpdateActiveFields();
             Planeset = GetPlaneSet();
             messDurTime = DateTime.Now;
             ClearPrevMission();
@@ -656,6 +826,26 @@ namespace Il_2.Commander.Commander
             Form1.busy = true;
             Form1.TriggerTime = true;
             SetChangeLog();
+        }
+        private void UpdateActiveFields()
+        {
+            var ruDisp = GetNameDispatchers(101);
+            var enDisp = GetNameDispatchers(201);
+            ActiveFields.Clear();
+            ExpertDB db = new ExpertDB();
+            var rear = db.RearFields.ToList();
+            foreach(var item in rear)
+            {
+                var indexRuVoice = random.Next(0, ruDisp.Count);
+                var indexEnVoice = random.Next(0, enDisp.Count);
+                var ruVoice = ruDisp[indexRuVoice];
+                var enVoice = enDisp[indexEnVoice];
+                ActiveFields.Add(new ATC(item, ruVoice, "ru-RU"));
+                ActiveFields.Add(new ATC(item, enVoice, "en-US"));
+                ruDisp.Remove(ruVoice);
+                enDisp.Remove(enVoice);
+            }
+            db.Dispose();
         }
         /// <summary>
         /// Получает сетап самолетов из базы данных
@@ -2534,6 +2724,57 @@ namespace Il_2.Commander.Commander
             }
             db.SaveChanges();
             db.Dispose();
+        }
+        /// <summary>
+        /// Возвращает список войсов в зависимости от языка 101 - русский язык, 201 - английский язык
+        /// </summary>
+        /// <returns>Возвращает список войсов для русского языка</returns>
+        private List<string> GetNameDispatchers(int coal)
+        {
+            var lname = new List<string>();
+            if(coal == 101)
+            {
+                lname.Add("oksana");
+                lname.Add("jane");
+                lname.Add("omazh");
+                lname.Add("zahar");
+                lname.Add("ermil");
+                lname.Add("oksana");
+                lname.Add("jane");
+                lname.Add("omazh");
+                lname.Add("zahar");
+                lname.Add("ermil");
+                lname.Add("oksana");
+                lname.Add("jane");
+                lname.Add("omazh");
+                lname.Add("zahar");
+                lname.Add("ermil");
+                lname.Add("oksana");
+                lname.Add("jane");
+                lname.Add("omazh");
+                lname.Add("zahar");
+                lname.Add("ermil");
+            }
+            if(coal == 201)
+            {
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+                lname.Add("alyss");
+                lname.Add("nick");
+            }
+            return lname;
         }
     }
     /// <summary>
