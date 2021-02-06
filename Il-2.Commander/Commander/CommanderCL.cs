@@ -1,5 +1,7 @@
 ﻿using Il_2.Commander.Data;
 using Il_2.Commander.Parser;
+using Il_2.Commander.SRS;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -125,6 +127,7 @@ namespace Il_2.Commander.Commander
         /// Список активных аэродромов в миссии
         /// </summary>
         private List<ATC> ActiveFields = new List<ATC>();
+        private ClientsSRS ClientsSRS { get; set; }
 
         /// <summary>
         /// Имя текущей миссии.
@@ -266,6 +269,7 @@ namespace Il_2.Commander.Commander
                     if (result != null && result.Type == Rcontype.CheckRegistration)
                     {
                         ExpertDB db = new ExpertDB();
+                        UpdateListSRSClients();
                         if (result.aType != null)
                         {
                             var profile = db.ProfileUser.FirstOrDefault(x => x.GameId == result.aType.LOGIN);
@@ -291,43 +295,10 @@ namespace Il_2.Commander.Commander
                                                     pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                                 }
                                             }
-                                            int coal = 0;
-                                            if (result.aType.COUNTRY == 101)
-                                            {
-                                                coal = 1;
-                                            }
-                                            if (result.aType.COUNTRY == 201)
-                                            {
-                                                coal = 2;
-                                            }
-                                            var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
-                                            var enATC = GetMinDistanceForATC(result.aType, "en-US");
-                                            db.Speech.Add(new Speech
-                                            {
-                                                Coalition = coal,
-                                                CreateDate = DateTime.Now,
-                                                Emotion = "good",
-                                                Frequency = 252,
-                                                Lang = "ru-RU",
-                                                NameSpeaker = ruATC.WhosTalking,
-                                                RecipientMessage = result.aType.NAME,
-                                                Speed = 1.1,
-                                                Voice = ruATC.VoiceName,
-                                                Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет разрешаю! Удачи в небе!",
-                                            });
-                                            db.Speech.Add(new Speech
-                                            {
-                                                Coalition = coal,
-                                                CreateDate = DateTime.Now,
-                                                Emotion = "good",
-                                                Frequency = 251,
-                                                Lang = "en-US",
-                                                NameSpeaker = enATC.WhosTalking,
-                                                RecipientMessage = result.aType.NAME,
-                                                Speed = 1.1,
-                                                Voice = enATC.VoiceName,
-                                                Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i allow takeoff! Good luck in the sky!",
-                                            });
+                                            int indexemo = random.Next(0, 3);
+                                            var emo = (EmotionSRS)indexemo;
+                                            SaveSpeechMessage(result.aType, ", - взлет разрешаю! Удачи в небе!",
+                                                ", i allow takeoff! Good luck in the sky!", emo);
                                         }
                                     }
                                     else
@@ -348,43 +319,10 @@ namespace Il_2.Commander.Commander
                                                     pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                                 }
                                             }
-                                            int coal = 0;
-                                            if (result.aType.COUNTRY == 101)
-                                            {
-                                                coal = 1;
-                                            }
-                                            if (result.aType.COUNTRY == 201)
-                                            {
-                                                coal = 2;
-                                            }
-                                            var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
-                                            var enATC = GetMinDistanceForATC(result.aType, "en-US");
-                                            db.Speech.Add(new Speech
-                                            {
-                                                Coalition = coal,
-                                                CreateDate = DateTime.Now,
-                                                Emotion = "evil",
-                                                Frequency = 252,
-                                                Lang = "ru-RU",
-                                                NameSpeaker = ruATC.WhosTalking,
-                                                RecipientMessage = result.aType.NAME,
-                                                Speed = 1.1,
-                                                Voice = ruATC.VoiceName,
-                                                Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет запрещаю! Вы не можете летать на стороне врага. Смените коалицию в игре.",
-                                            });
-                                            db.Speech.Add(new Speech
-                                            {
-                                                Coalition = coal,
-                                                CreateDate = DateTime.Now,
-                                                Emotion = "evil",
-                                                Frequency = 251,
-                                                Lang = "en-US",
-                                                NameSpeaker = enATC.WhosTalking,
-                                                RecipientMessage = result.aType.NAME,
-                                                Speed = 1.1,
-                                                Voice = enATC.VoiceName,
-                                                Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i forbid takeoff! You can't fly on the enemy's side. Change the coalition in the game.",
-                                            });
+                                            int indexemo = random.Next(0, 3);
+                                            var emo = (EmotionSRS)indexemo;
+                                            SaveSpeechMessage(result.aType, ", - взлет запрещаю! Вы не можете летать на стороне врага. Смените коалицию в игре.", 
+                                                ", i forbid takeoff! You can't fly on the enemy's side. Change the coalition in the game.", emo);
                                         }
                                     }
                                 }
@@ -406,43 +344,9 @@ namespace Il_2.Commander.Commander
                                                 pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                             }
                                         }
-                                        int coal = 0;
-                                        if (result.aType.COUNTRY == 101)
-                                        {
-                                            coal = 1;
-                                        }
-                                        if (result.aType.COUNTRY == 201)
-                                        {
-                                            coal = 2;
-                                        }
-                                        var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
-                                        var enATC = GetMinDistanceForATC(result.aType, "en-US");
-                                        db.Speech.Add(new Speech
-                                        {
-                                            Coalition = coal,
-                                            CreateDate = DateTime.Now,
-                                            Emotion = "evil",
-                                            Frequency = 252,
-                                            Lang = "ru-RU",
-                                            NameSpeaker = ruATC.WhosTalking,
-                                            RecipientMessage = result.aType.NAME,
-                                            Speed = 1.1,
-                                            Voice = ruATC.VoiceName,
-                                            Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет запрещаю! Вам, на веб-сайте, нужно выбрать коалицию.",
-                                        });
-                                        db.Speech.Add(new Speech
-                                        {
-                                            Coalition = coal,
-                                            CreateDate = DateTime.Now,
-                                            Emotion = "evil",
-                                            Frequency = 251,
-                                            Lang = "en-US",
-                                            NameSpeaker = enATC.WhosTalking,
-                                            RecipientMessage = result.aType.NAME,
-                                            Speed = 1.1,
-                                            Voice = enATC.VoiceName,
-                                            Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i forbid takeoff! You, on the website, need to choose a coalition.",
-                                        });
+                                        int indexemo = random.Next(0, 3);
+                                        var emo = (EmotionSRS)indexemo;
+                                        SaveSpeechMessage(result.aType, ", - взлет запрещаю! Вам, на веб-сайте, нужно выбрать коалицию.", ", i forbid takeoff! You, on the website, need to choose a coalition.", emo);
                                     }
                                 }
                             }
@@ -464,43 +368,10 @@ namespace Il_2.Commander.Commander
                                             pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
                                         }
                                     }
-                                    int coal = 0;
-                                    if (result.aType.COUNTRY == 101)
-                                    {
-                                        coal = 1;
-                                    }
-                                    if (result.aType.COUNTRY == 201)
-                                    {
-                                        coal = 2;
-                                    }
-                                    var ruATC = GetMinDistanceForATC(result.aType, "ru-RU");
-                                    var enATC = GetMinDistanceForATC(result.aType, "en-US");
-                                    db.Speech.Add(new Speech
-                                    {
-                                        Coalition = coal,
-                                        CreateDate = DateTime.Now,
-                                        Emotion = "evil",
-                                        Frequency = 252,
-                                        Lang = "ru-RU",
-                                        NameSpeaker = ruATC.WhosTalking,
-                                        RecipientMessage = result.aType.NAME,
-                                        Speed = 1.1,
-                                        Voice = ruATC.VoiceName,
-                                        Message = ruATC.WhosTalking + " - " + result.aType.NAME + ", - взлет запрещаю! Ознакомьтесь с брифингом!",
-                                    });
-                                    db.Speech.Add(new Speech
-                                    {
-                                        Coalition = coal,
-                                        CreateDate = DateTime.Now,
-                                        Emotion = "evil",
-                                        Frequency = 251,
-                                        Lang = "en-US",
-                                        NameSpeaker = enATC.WhosTalking,
-                                        RecipientMessage = result.aType.NAME,
-                                        Speed = 1.1,
-                                        Voice = enATC.VoiceName,
-                                        Message = enATC.WhosTalking + " - " + result.aType.NAME + ", i forbid takeoff! Check out the briefing!",
-                                    });
+
+                                    int indexemo = random.Next(0, 3);
+                                    var emo = (EmotionSRS)indexemo;
+                                    SaveSpeechMessage(result.aType, ", - взлет запрещаю! Ознакомьтесь с брифингом!", ", i forbid takeoff! Check out the briefing!", emo);
                                 }
                             }
                         }
@@ -655,6 +526,80 @@ namespace Il_2.Commander.Commander
             {
                 Form1.busy = true;
                 SetChangeLog();
+            }
+        }
+        /// <summary>
+        /// Проверяет наличие пилота в SRS. Определяет в каком канале пилот если он есть и записывает в БД сообщение для дальнейшей отправки в SRS
+        /// </summary>
+        /// <param name="aType">AType10 данные о пилоте</param>
+        /// <param name="MessageRu">Сообщение на русском языке</param>
+        /// <param name="MessageEng">Сообщение на английском языке</param>
+        /// <param name="emotion">Эмоциональный окрас сообщения</param>
+        private void SaveSpeechMessage(AType10 aType, string MessageRu, string MessageEng, EmotionSRS emotion)
+        {
+            ListSRSClients clientsrs = new ListSRSClients();
+            foreach (var item in ClientsSRS.Clients)
+            {
+                if(item.Name.Equals(aType.NAME))
+                {
+                    clientsrs = item;
+                }
+            }
+            if(clientsrs != null)
+            {
+                ExpertDB db = new ExpertDB();
+                if (clientsrs.GameState.radios[0].freq == 251000000.0)
+                {
+                    var enATC = GetMinDistanceForATC(aType, "en-US");
+                    db.Speech.Add(new Speech
+                    {
+                        Coalition = clientsrs.Coalition,
+                        CreateDate = DateTime.Now,
+                        Emotion = emotion.ToString(),
+                        Frequency = 251,
+                        Lang = "en-US",
+                        NameSpeaker = enATC.WhosTalking,
+                        RecipientMessage = aType.NAME,
+                        Speed = 1.1,
+                        Voice = enATC.VoiceName,
+                        Message = enATC.WhosTalking + " - " + aType.NAME + MessageEng,
+                    });
+                    db.SaveChanges();
+                }
+                if (clientsrs.GameState.radios[0].freq == 252000000.0)
+                {
+                    var ruATC = GetMinDistanceForATC(aType, "ru-RU");
+                    db.Speech.Add(new Speech
+                    {
+                        Coalition = clientsrs.Coalition,
+                        CreateDate = DateTime.Now,
+                        Emotion = emotion.ToString(),
+                        Frequency = 252,
+                        Lang = "ru-RU",
+                        NameSpeaker = ruATC.WhosTalking,
+                        RecipientMessage = aType.NAME,
+                        Speed = 1.1,
+                        Voice = ruATC.VoiceName,
+                        Message = ruATC.WhosTalking + " - " + aType.NAME + MessageRu,
+                    });
+                    db.SaveChanges();
+                }
+                db.Dispose();
+            }
+        }
+        private void UpdateListSRSClients()
+        {
+            try
+            {
+                var json = string.Empty;
+                using (var fs = File.OpenRead(SetApp.Config.DirSRS + @"\clients-list.json"))
+                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
+                    json = sr.ReadToEnd();
+                ClientsSRS = JsonConvert.DeserializeObject<ClientsSRS>(json);
+            }
+            catch (Exception ex)
+            {
+                GetLogStr(ex.Message, Color.Red);
             }
         }
         private ATC GetMinDistanceForATC(AType10 aType, string lang)
@@ -827,6 +772,9 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
         }
+        /// <summary>
+        /// Обновление войсов на активных аэродромах
+        /// </summary>
         private void UpdateActiveFields()
         {
             var ruDisp = GetNameDispatchers(101);
@@ -2794,5 +2742,14 @@ namespace Il_2.Commander.Commander
         /// Колонна не бронированной техники
         /// </summary>
         Transport = 3
+    }
+    /// <summary>
+    /// Эмоциональные окраски голосовых сообщений https://cloud.yandex.ru/docs/speechkit/tts/request
+    /// </summary>
+    enum EmotionSRS
+    {
+        neutral = 0,
+        good = 1,
+        evil = 2
     }
 }

@@ -84,5 +84,10 @@ namespace Il_2.Commander
         /// </summary>
         [JsonProperty("TransportMult")]
         public double TransportMult { get; private set; }
+        /// <summary>
+        /// Директория в которой лежит SRS server
+        /// </summary>
+        [JsonProperty("DirSRS")]
+        public string DirSRS { get; private set; }
     }
 }
