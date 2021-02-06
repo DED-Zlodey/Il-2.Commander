@@ -316,7 +316,7 @@ namespace Il_2.Commander.Commander
                                                 var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
                                                 if (locpilot != null)
                                                 {
-                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
+                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                                 }
                                             }
                                             int indexemo = random.Next(0, 3);
@@ -341,7 +341,7 @@ namespace Il_2.Commander.Commander
                                             var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
                                             if (locpilot != null)
                                             {
-                                                pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
+                                                pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                             }
                                         }
                                         int indexemo = random.Next(0, 3);
@@ -365,7 +365,7 @@ namespace Il_2.Commander.Commander
                                         var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
                                         if (locpilot != null)
                                         {
-                                            pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = false;
+                                            pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                         }
                                     }
 
