@@ -950,15 +950,19 @@ namespace Il_2.Commander.Commander
                     }
                     if (aType.TYPE.Contains("Ju 52 3mg4e"))
                     {
-                        var planeName = AllLogs.FindLast(x => x.ID == aType.PLID).NAME;
-                        if (!string.IsNullOrEmpty(planeName))
+                        var planeent = aType.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
+                        if(planeent != null)
                         {
-                            var numfield = int.Parse(planeName.Substring(planeName.Length - 1));
-                            var index = planeName.Length - 2;
-                            planeName = planeName.Substring(0, index);
-                            if (planeName.Equals("Transport"))
+                            var planeName = planeent.NAME;
+                            if (!string.IsNullOrEmpty(planeName))
                             {
-                                aType.Cargo = 0.35;
+                                var numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                                var index = planeName.Length - 2;
+                                planeName = planeName.Substring(0, index);
+                                if (planeName.Equals("Transport"))
+                                {
+                                    aType.Cargo = 0.35;
+                                }
                             }
                         }
                     }
