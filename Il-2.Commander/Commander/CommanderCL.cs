@@ -1045,28 +1045,32 @@ namespace Il_2.Commander.Commander
                     {
                         int numfield = 0;
                         var ent = pilotsList.First(x => x.PLID == aType.PID);
-                        var planeName = AllLogs.FindLast(x => x.ID == ent.PLID).NAME;
-                        if (!string.IsNullOrEmpty(planeName))
+                        var entPlane = ent.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
+                        if (entPlane != null)
                         {
-                            numfield = int.Parse(planeName.Substring(planeName.Length - 1));
-                            var index = planeName.Length - 2;
-                            planeName = planeName.Substring(0, index);
+                            var planeName = entPlane.NAME;
+                            if (!string.IsNullOrEmpty(planeName))
+                            {
+                                numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                                var index = planeName.Length - 2;
+                                planeName = planeName.Substring(0, index);
+                            }
+                            if (ent.TYPE.Contains("Ju 52 3mg4e"))
+                            {
+                                if (!string.IsNullOrEmpty(planeName))
+                                {
+                                    if (planeName.Equals("Transport"))
+                                    {
+                                        SupplyCauldron(aType, ent);
+                                    }
+                                }
+                            }
                         }
                         pilotsList.First(x => x.PLID == aType.PID).GameStatus = GameStatusPilot.Parking.ToString();
                         var playerid = ent.LOGIN;
                         if (onlinePlayers.Exists(x => x.PlayerId == playerid))
                         {
                             onlinePlayers.First(x => x.PlayerId == playerid).IngameStatus = GameStatusPilot.InFlight.ToString();
-                        }
-                        if (ent.TYPE.Contains("Ju 52 3mg4e"))
-                        {
-                            if (!string.IsNullOrEmpty(planeName))
-                            {
-                                if (planeName.Equals("Transport"))
-                                {
-                                    SupplyCauldron(aType, ent);
-                                }
-                            }
                         }
                     }
                 }
@@ -1145,7 +1149,7 @@ namespace Il_2.Commander.Commander
                     var Planeset = db.PlaneSet.Where(x => x.Coalition == pilot.COUNTRY).ToList();
                     int numfield = 0;
                     var plane = pilot.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
-                    if(plane != null)
+                    if (plane != null)
                     {
                         if (Planeset.Exists(x => x.LogType == plane.TYPE))
                         {
@@ -1192,7 +1196,7 @@ namespace Il_2.Commander.Commander
                     db.Dispose();
                 }
             }
-            else
+            if (pilot.Death != null)
             {
                 HandleKillPilot(pilot);
             }
@@ -1273,48 +1277,45 @@ namespace Il_2.Commander.Commander
             ExpertDB db = new ExpertDB();
             var Planeset = db.PlaneSet.Where(x => x.Coalition == pilot.COUNTRY).ToList();
             int numfield = 0;
-            var ent = AllLogs.FindLast(x => x.ID == pilot.Death.TID);
+            var ent = pilot.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
             if (ent != null)
             {
-                if (Planeset.Exists(x => x.LogType == ent.TYPE))
+                var planeName = ent.NAME;
+                if (!string.IsNullOrEmpty(planeName))
                 {
-                    var planeName = ent.NAME;
-                    if (!string.IsNullOrEmpty(planeName))
+                    numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                    var index = planeName.Length - 2;
+                    planeName = planeName.Substring(0, index);
+                    var psent = Planeset.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
+                    if (psent != null)
                     {
-                        numfield = int.Parse(planeName.Substring(planeName.Length - 1));
-                        var index = planeName.Length - 2;
-                        planeName = planeName.Substring(0, index);
-                        var psent = Planeset.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
-                        if (psent != null)
+                        //var pilot = pilotsList.First(x => x.PLID == aType.TID);
+                        var ncraft = psent.Number - 1;
+                        db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
+                        var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
+                        GetLogStr(mess, Color.Red);
+                        var orders = db.PlanesOrders.ToList();
+                        if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
                         {
-                            //var pilot = pilotsList.First(x => x.PLID == aType.TID);
-                            var ncraft = psent.Number - 1;
-                            db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
-                            var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
-                            GetLogStr(mess, Color.Red);
-                            var orders = db.PlanesOrders.ToList();
-                            if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
+                            var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
+                            db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
+                        }
+                        else
+                        {
+                            db.PlanesOrders.Add(new PlanesOrders
                             {
-                                var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
-                                db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
-                            }
-                            else
-                            {
-                                db.PlanesOrders.Add(new PlanesOrders
-                                {
-                                    Coalition = psent.Coalition,
-                                    DateDeath = DateTime.Parse(GameDate),
-                                    FreqSupply = psent.FreqSupply,
-                                    Name = psent.Name,
-                                    Number = 1,
-                                    PlaneSetId = psent.id
-                                });
-                            }
-                            db.SaveChanges();
-                            if (messenger != null)
-                            {
-                                messenger.SpecSend("FrontLine");
-                            }
+                                Coalition = psent.Coalition,
+                                DateDeath = DateTime.Parse(GameDate),
+                                FreqSupply = psent.FreqSupply,
+                                Name = psent.Name,
+                                Number = 1,
+                                PlaneSetId = psent.id
+                            });
+                        }
+                        db.SaveChanges();
+                        if (messenger != null)
+                        {
+                            messenger.SpecSend("FrontLine");
                         }
                     }
                 }
@@ -1824,7 +1825,7 @@ namespace Il_2.Commander.Commander
             }
         }
         /// <summary>
-        /// Устанавливает текущую точку атаки в заивисимости от коалиции
+        /// Устанавливает текущую точку атаки в зависимости от коалиции
         /// </summary>
         /// <param name="coal">Принимает номер коалиции для которой требуется установить текущую точку атаки</param>
         private void SetAttackPoint(int coal)

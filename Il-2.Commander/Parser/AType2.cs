@@ -25,7 +25,7 @@ namespace Il_2.Commander.Parser
             str = str.Replace('(', '{');
             str = str.Replace(')', '}');
             TICK = int.Parse(reg_tick.Match(str).Value);
-            DMG = double.Parse(reg_dmg.Match(str).Value);
+            DMG = double.Parse(SetApp.ReplaceSeparator(reg_dmg.Match(str).Value));
             AID = int.Parse(reg_aid.Match(str).Value);
             TID = int.Parse(reg_tid.Match(str).Value);
             var strcoord = reg_coord.Match(str).Value.Split(new char[] { ',' });
