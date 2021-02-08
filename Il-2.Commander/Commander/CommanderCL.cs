@@ -930,10 +930,24 @@ namespace Il_2.Commander.Commander
                 if (str[i].Contains("AType:10 "))
                 {
                     AType10 aType = new AType10(str[i]);
-                    RconCommand wrap = new RconCommand(Rcontype.Players, aType);
-                    RconCommands.Enqueue(wrap);
-                    RconCommand wrap1 = new RconCommand(Rcontype.CheckRegistration, aType);
-                    RconCommands.Enqueue(wrap1);
+                    if (AllLogs.Exists(x => x.ID == aType.PLID && x.TypeVeh == TypeAtype12.AirCraft))
+                    {
+                        var ent = AllLogs.FindLast(x => x.ID == aType.PLID && x.TypeVeh == TypeAtype12.AirCraft);
+                        if (ent != null)
+                        {
+                            aType.ParenEnt.Add(ent);
+                            AllLogs.Remove(ent);
+                        }
+                    }
+                    if (AllLogs.Exists(x => x.ID == aType.PID && x.TypeVeh == TypeAtype12.BotBotPilot))
+                    {
+                        var ent = AllLogs.FindLast(x => x.ID == aType.PID && x.TypeVeh == TypeAtype12.BotBotPilot);
+                        if (ent != null)
+                        {
+                            aType.ParenEnt.Add(ent);
+                            AllLogs.Remove(ent);
+                        }
+                    }
                     if (aType.TYPE.Contains("Ju 52 3mg4e"))
                     {
                         var planeName = AllLogs.FindLast(x => x.ID == aType.PLID).NAME;
@@ -954,6 +968,10 @@ namespace Il_2.Commander.Commander
                         onlinePlayers.First(x => x.PlayerId == aType.LOGIN).IngameStatus = GameStatusPilot.Parking.ToString();
                         onlinePlayers.First(x => x.PlayerId == aType.LOGIN).Coalition = aType.COUNTRY;
                     }
+                    RconCommand wrap = new RconCommand(Rcontype.Players, aType);
+                    RconCommands.Enqueue(wrap);
+                    RconCommand wrap1 = new RconCommand(Rcontype.CheckRegistration, aType);
+                    RconCommands.Enqueue(wrap1);
                 }
                 if (str[i].Contains("AType:16 "))
                 {
@@ -969,6 +987,7 @@ namespace Il_2.Commander.Commander
                         var ent = pilotsList.FirstOrDefault(x => x.PID == aType.BOTID);
                         if (ent != null)
                         {
+                            HandleBotDispose(aType, ent);
                             pilotsList.Remove(pilotsList.First(x => x.PLID == ent.PLID));
                         }
                     }
@@ -981,9 +1000,13 @@ namespace Il_2.Commander.Commander
                         CheckDestroyTarget(aType);
                         updateTarget = true;
                     }
-                    if (pilotsList.Exists(x => x.PLID == aType.TID))
+                    if (pilotsList.Exists(x => x.PLID == aType.TID || x.PID == aType.TID))
                     {
-                        HandleKillPilot(aType);
+                        var pilot = pilotsList.FirstOrDefault(x => x.PLID == aType.TID || x.PID == aType.TID);
+                        if (pilot != null)
+                        {
+                            pilotsList.FirstOrDefault(x => x.PLID == aType.TID || x.PID == aType.TID).Death = new AType3(aType);
+                        }
                     }
                 }
                 if (str[i].Contains("AType:5 "))
@@ -992,6 +1015,8 @@ namespace Il_2.Commander.Commander
                     if (pilotsList.Exists(x => x.PLID == aType.PID))
                     {
                         var pilot = pilotsList.First(x => x.PLID == aType.PID);
+                        pilotsList.First(x => x.PLID == aType.PID).DamageList.Clear();
+                        pilotsList.First(x => x.PLID == aType.PID).Death = null;
                         if (!pilot.TakeOffAllowed)
                         {
                             RconCommand wrap = new RconCommand(Rcontype.Kick, pilot);
@@ -1078,6 +1103,18 @@ namespace Il_2.Commander.Commander
                         Blocks.Add(aType);
                     }
                 }
+                if (str[i].Contains("AType:2 "))
+                {
+                    AType2 aType = new AType2(str[i]);
+                    if (pilotsList.Exists(x => x.PLID == aType.TID) || pilotsList.Exists(x => x.PID == aType.TID))
+                    {
+                        var ent = pilotsList.FirstOrDefault(x => x.PLID == aType.TID || x.PID == aType.TID);
+                        if (ent != null)
+                        {
+                            pilotsList.FirstOrDefault(x => x.PLID == aType.TID || x.PID == aType.TID).DamageList.Add(aType);
+                        }
+                    }
+                }
             }
             if (updateTarget)
             {
@@ -1094,15 +1131,149 @@ namespace Il_2.Commander.Commander
             }
         }
         /// <summary>
+        /// Обработка утилизации бота. Когда пилот заканчивает сессию.
+        /// </summary>
+        /// <param name="aType">Событие AType:16</param>
+        /// <param name="pilot">Событие AType:10</param>
+        private void HandleBotDispose(AType16 aType, AType10 pilot)
+        {
+            if (pilot.Death == null && pilot.DamageList.Count > 0)
+            {
+                if (!CheckBotDisposeFieldArea(aType, pilot.COUNTRY) && !CheckBotDisposeForServiceArea(aType, pilot.COUNTRY))
+                {
+                    ExpertDB db = new ExpertDB();
+                    var Planeset = db.PlaneSet.Where(x => x.Coalition == pilot.COUNTRY).ToList();
+                    int numfield = 0;
+                    var plane = pilot.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
+                    if(plane != null)
+                    {
+                        if (Planeset.Exists(x => x.LogType == plane.TYPE))
+                        {
+                            var planeName = plane.NAME;
+                            if (!string.IsNullOrEmpty(planeName))
+                            {
+                                numfield = int.Parse(planeName.Substring(planeName.Length - 1));
+                                var index = planeName.Length - 2;
+                                planeName = planeName.Substring(0, index);
+                                var psent = Planeset.FirstOrDefault(x => x.LogType == plane.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == plane.COUNTRY);
+                                if (psent != null)
+                                {
+                                    var ncraft = psent.Number - 1;
+                                    db.PlaneSet.First(x => x.LogType == plane.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
+                                    var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
+                                    GetLogStr(mess, Color.Red);
+                                    var orders = db.PlanesOrders.ToList();
+                                    if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
+                                    {
+                                        var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
+                                        db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
+                                    }
+                                    else
+                                    {
+                                        db.PlanesOrders.Add(new PlanesOrders
+                                        {
+                                            Coalition = psent.Coalition,
+                                            DateDeath = DateTime.Parse(GameDate),
+                                            FreqSupply = psent.FreqSupply,
+                                            Name = psent.Name,
+                                            Number = 1,
+                                            PlaneSetId = psent.id
+                                        });
+                                    }
+                                    db.SaveChanges();
+                                    if (messenger != null)
+                                    {
+                                        messenger.SpecSend("FrontLine");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    db.Dispose();
+                }
+            }
+            else
+            {
+                HandleKillPilot(pilot);
+            }
+        }
+        /// <summary>
+        /// Проверяет утилизирован ли бот внутри зоны обслуживания аэродрома подскока?
+        /// </summary>
+        /// <returns>Возвращает true, если бот утилизирован внутри зоны обслуживания и false если вне зоны обслуживания</returns>
+        private bool CheckBotDisposeForServiceArea(AType16 aType, int coal)
+        {
+            ExpertDB db = new ExpertDB();
+            var services = db.ServiceArea.Where(x => x.Coalition == coal).ToList();
+            db.Dispose();
+            foreach (var item in services)
+            {
+                var dist = SetApp.GetDistance(aType.ZPos, aType.XPos, item.ZPos, item.XPos);
+                if (dist <= item.MaintenanceRadius)
+                {
+                    var diff = aType.YPos - item.YPos;
+                    if (diff > 1 || diff < -1)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        /// <summary>
+        /// Проверяет утилизирован ли бот в зоне активного аэродрома?
+        /// </summary>
+        /// <returns>Возвращает true, если утилизация бота произошла в зоне активного аэродрома и false если вне зоны</returns>
+        private bool CheckBotDisposeFieldArea(AType16 aType, int coal)
+        {
+            ExpertDB db = new ExpertDB();
+            var rearfields = db.RearFields.Where(x => x.Coalition == coal).ToList();
+            var af = db.AirFields.Where(x => x.Coalitions == coal).ToList();
+            db.Dispose();
+            List<AirFields> localfields = new List<AirFields>();
+            foreach (var item in rearfields)
+            {
+                if (af.Exists(x => x.XPos == item.XPos && x.ZPos == item.ZPos))
+                {
+                    var ent = af.FirstOrDefault(x => x.XPos == item.XPos && x.ZPos == item.ZPos);
+                    if (ent != null)
+                    {
+                        localfields.Add(ent);
+                    }
+                }
+            }
+            foreach (var item in af)
+            {
+                var dist = SetApp.GetDistance(aType.ZPos, aType.XPos, item.ZPos, item.XPos);
+                if (dist <= 2000)
+                {
+                    var diff = aType.YPos - item.YPos;
+                    if (diff > 5 || diff < -5)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        /// <summary>
         ///  Обработка уничтожения самолета
         /// </summary>
         /// <param name="aType"></param>
-        private void HandleKillPilot(AType3 aType)
+        private void HandleKillPilot(AType10 pilot)
         {
             ExpertDB db = new ExpertDB();
-            var Planeset = db.PlaneSet.ToList();
+            var Planeset = db.PlaneSet.Where(x => x.Coalition == pilot.COUNTRY).ToList();
             int numfield = 0;
-            var ent = AllLogs.FindLast(x => x.ID == aType.TID);
+            var ent = AllLogs.FindLast(x => x.ID == pilot.Death.TID);
             if (ent != null)
             {
                 if (Planeset.Exists(x => x.LogType == ent.TYPE))
@@ -1116,10 +1287,10 @@ namespace Il_2.Commander.Commander
                         var psent = Planeset.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
                         if (psent != null)
                         {
-                            var pilot = pilotsList.First(x => x.PLID == aType.TID);
+                            //var pilot = pilotsList.First(x => x.PLID == aType.TID);
                             var ncraft = psent.Number - 1;
                             db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
-                            var mess = "-=COMMANDER=-: Kill " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
+                            var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
                             GetLogStr(mess, Color.Red);
                             var orders = db.PlanesOrders.ToList();
                             if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))

@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using Il_2.Commander.Data;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Il_2.Commander.Parser
 {
@@ -15,6 +17,7 @@ namespace Il_2.Commander.Parser
         public double ZPos { get; private set; }
         public bool Destroyed { get; set; }
         public int Unit { get; set; }
+        public TypeAtype12 TypeVeh { get; private set; }
 
         #region Regulars
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
@@ -47,6 +50,28 @@ namespace Il_2.Commander.Parser
                 YPos = double.Parse(SetApp.ReplaceSeparator(strcoord[1]));
                 ZPos = double.Parse(SetApp.ReplaceSeparator(strcoord[2]));
             }
+            TypeVeh = GetTypeAtype12();
         }
+        private TypeAtype12 GetTypeAtype12()
+        {
+            ExpertDB db = new ExpertDB();
+            var Planeset = db.PlaneSet.ToList();
+            db.Dispose();
+            if (Planeset.Exists(x => x.LogType == TYPE))
+            {
+                return TypeAtype12.AirCraft;
+            }
+            if(TYPE.Contains("BotPilot_"))
+            {
+                return TypeAtype12.BotBotPilot;
+            }
+            return TypeAtype12.Unknown;
+        }
+    }
+    enum TypeAtype12
+    {
+        Unknown = 0,
+        BotBotPilot = 1,
+        AirCraft = 2
     }
 }

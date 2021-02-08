@@ -4,6 +4,7 @@
     {
         public int id { get; set; }
         public int IndexFiled { get; set; }
+        public int Coalition { get; set; }
         public double XPos { get; set; }
         public double ZPos { get; set; }
     }

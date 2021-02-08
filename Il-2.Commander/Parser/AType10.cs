@@ -1,4 +1,5 @@
 ﻿using Il_2.Commander.Commander;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace Il_2.Commander.Parser
@@ -32,8 +33,20 @@ namespace Il_2.Commander.Parser
         public int WM { get; private set; }
         public string GameStatus { get; set; }
         public Player Player { get; set; }
+        /// <summary>
+        /// Груз на борту самолета связанного с пилотом
+        /// </summary>
         public double Cargo { get; set; } = 0;
         public bool TakeOffAllowed { get; set; } = false;
+        public List<AType2> DamageList { get; set; } = new List<AType2>();
+        /// <summary>
+        /// Связанные с пилотом сущности
+        /// </summary>
+        public List<AType12> ParenEnt { get; set; } = new List<AType12>();
+        /// <summary>
+        /// Пилот сбит.
+        /// </summary>
+        public AType3 Death { get; set; }
 
         #region Регулярки
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");

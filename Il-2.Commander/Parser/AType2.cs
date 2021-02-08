@@ -2,9 +2,10 @@
 
 namespace Il_2.Commander.Parser
 {
-    class AType3
+    class AType2
     {
         public int TICK { get; private set; }
+        public double DMG { get; private set; }
         public int AID { get; private set; }
         public int TID { get; private set; }
         public double XPos { get; private set; }
@@ -13,20 +14,18 @@ namespace Il_2.Commander.Parser
 
         #region Regulars
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
-        private static Regex reg_aid = new Regex(@"(?<=AID:).*?(?= TID)");
-        private static Regex reg_tid = new Regex(@"(?<=TID:).*?(?= POS)");
+        private static Regex reg_dmg = new Regex(@"(?<=DMG:).*?(?= AID:)");
+        private static Regex reg_aid = new Regex(@"(?<= AID:).*?(?= TID:)");
+        private static Regex reg_tid = new Regex(@"(?<= TID:).*?(?= POS)");
         private static Regex reg_coord = new Regex(@"(?<={).*?(?=})");
         #endregion
 
-        /// <summary>
-        /// Обрабатывает AType:3. Хранит всю информацию о событии AType 3. Событие уничтожения какого-либо объекта в миссии, каким-либо объектом в миссии.
-        /// </summary>
-        /// <param name="str">Принимает строку, в которой содержится информация о событии AType:3</param>
-        public AType3(string str)
+        public AType2(string str)
         {
             str = str.Replace('(', '{');
             str = str.Replace(')', '}');
             TICK = int.Parse(reg_tick.Match(str).Value);
+            DMG = double.Parse(reg_dmg.Match(str).Value);
             AID = int.Parse(reg_aid.Match(str).Value);
             TID = int.Parse(reg_tid.Match(str).Value);
             var strcoord = reg_coord.Match(str).Value.Split(new char[] { ',' });
@@ -36,15 +35,12 @@ namespace Il_2.Commander.Parser
                 YPos = double.Parse(SetApp.ReplaceSeparator(strcoord[1]));
                 ZPos = double.Parse(SetApp.ReplaceSeparator(strcoord[2]));
             }
-        }
-        public AType3(AType3 aType)
-        {
-            TICK = aType.TICK;
-            AID = aType.AID;
-            TID = aType.TID;
-            XPos = aType.XPos;
-            YPos = aType.YPos;
-            ZPos = aType.ZPos;
+            else
+            {
+                XPos = 0;
+                YPos = 0;
+                ZPos = 0;
+            }
         }
     }
 }
