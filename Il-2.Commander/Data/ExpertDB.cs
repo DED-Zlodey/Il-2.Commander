@@ -53,5 +53,6 @@ namespace Il_2.Commander.Data
         public virtual DbSet<PlanesOrders> PlanesOrders { get; set; }
         public virtual DbSet<BanList> BanList { get; set; }
         public virtual DbSet<Speech> Speech { get; set; }
+        public virtual DbSet<ATCDispatcher> ATCDispatcher { get; set; }
     }
 }

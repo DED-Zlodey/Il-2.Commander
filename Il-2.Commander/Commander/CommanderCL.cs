@@ -127,7 +127,7 @@ namespace Il_2.Commander.Commander
         /// Список активных аэродромов в миссии
         /// </summary>
         private List<ATC> ActiveFields = new List<ATC>();
-        private ClientsSRS ClientsSRS { get; set; }
+        private List<ATCDispatcher> DispatchersATC { get; set; } = new List<ATCDispatcher>();
 
         /// <summary>
         /// Имя текущей миссии.
@@ -269,7 +269,6 @@ namespace Il_2.Commander.Commander
                     if (result != null && result.Type == Rcontype.CheckRegistration)
                     {
                         ExpertDB db = new ExpertDB();
-                        UpdateListSRSClients();
                         if (result.aType != null)
                         {
                             var profile = db.ProfileUser.FirstOrDefault(x => x.GameId == result.aType.LOGIN);
@@ -284,8 +283,8 @@ namespace Il_2.Commander.Commander
                                         if (player != null)
                                         {
                                             var mess = "-=COMMANDER=- " + player.Name + " Take-off is allowed.";
-                                            RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
-                                            RconCommands.Enqueue(wrap);
+                                            //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                            //RconCommands.Enqueue(wrap);
                                             GetLogStr(mess, Color.Indigo);
                                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                             {
@@ -297,8 +296,11 @@ namespace Il_2.Commander.Commander
                                             }
                                             int indexemo = random.Next(0, 3);
                                             var emo = (EmotionSRS)indexemo;
-                                            SaveSpeechMessage(result.aType, ", - взлет разрешаю! Удачи в небе!",
-                                                ", i allow takeoff! Good luck in the sky!", emo);
+                                            var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
+                                            var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                            var indexRuPhrase = random.Next(0, ruPhrase.Count);
+                                            var indexEnPhrase = random.Next(0, enPhrase.Count);
+                                            SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
                                         }
                                     }
                                     else
@@ -308,8 +310,8 @@ namespace Il_2.Commander.Commander
                                         if (player != null)
                                         {
                                             var mess = "-=COMMANDER=- " + player.Name + " You chose the wrong coalition. Take-off is PROHIBITED!!!";
-                                            RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
-                                            RconCommands.Enqueue(wrap);
+                                            //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                            //RconCommands.Enqueue(wrap);
                                             GetLogStr(mess, Color.Indigo);
                                             if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                             {
@@ -321,8 +323,11 @@ namespace Il_2.Commander.Commander
                                             }
                                             int indexemo = random.Next(0, 3);
                                             var emo = (EmotionSRS)indexemo;
-                                            SaveSpeechMessage(result.aType, ", - взлет запрещаю! Вы не можете летать на стороне врага. Смените коалицию в игре.", 
-                                                ", i forbid takeoff! You can't fly on the enemy's side. Change the coalition in the game.", emo);
+                                            var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
+                                            var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                            var indexRuPhrase = random.Next(0, ruPhrase.Count);
+                                            var indexEnPhrase = random.Next(0, enPhrase.Count);
+                                            SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
                                         }
                                     }
                                 }
@@ -333,8 +338,8 @@ namespace Il_2.Commander.Commander
                                     if (player != null)
                                     {
                                         var mess = "-=COMMANDER=- " + player.Name + " You didn't choose a coalition. Take-off is PROHIBITED!!!";
-                                        RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
-                                        RconCommands.Enqueue(wrap);
+                                        //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                        //RconCommands.Enqueue(wrap);
                                         GetLogStr(mess, Color.Indigo);
                                         if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                         {
@@ -346,7 +351,11 @@ namespace Il_2.Commander.Commander
                                         }
                                         int indexemo = random.Next(0, 3);
                                         var emo = (EmotionSRS)indexemo;
-                                        SaveSpeechMessage(result.aType, ", - взлет запрещаю! Вам, на веб-сайте, нужно выбрать коалицию.", ", i forbid takeoff! You, on the website, need to choose a coalition.", emo);
+                                        var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
+                                        var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                        var indexRuPhrase = random.Next(0, ruPhrase.Count);
+                                        var indexEnPhrase = random.Next(0, enPhrase.Count);
+                                        SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
                                     }
                                 }
                             }
@@ -357,8 +366,8 @@ namespace Il_2.Commander.Commander
                                 if (player != null)
                                 {
                                     var mess = "-=COMMANDER=- " + player.Name + " You are not registered on the site. Take-off is PROHIBITED!!!";
-                                    RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
-                                    RconCommands.Enqueue(wrap);
+                                    //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                    //RconCommands.Enqueue(wrap);
                                     GetLogStr(mess, Color.Indigo);
                                     if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                     {
@@ -368,10 +377,13 @@ namespace Il_2.Commander.Commander
                                             pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
                                         }
                                     }
-
                                     int indexemo = random.Next(0, 3);
                                     var emo = (EmotionSRS)indexemo;
-                                    SaveSpeechMessage(result.aType, ", - взлет запрещаю! Ознакомьтесь с брифингом!", ", i forbid takeoff! Check out the briefing!", emo);
+                                    var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
+                                    var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                    var indexRuPhrase = random.Next(0, ruPhrase.Count);
+                                    var indexEnPhrase = random.Next(0, enPhrase.Count);
+                                    SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
                                 }
                             }
                         }
@@ -529,7 +541,7 @@ namespace Il_2.Commander.Commander
             }
         }
         /// <summary>
-        /// Проверяет наличие пилота в SRS. Определяет в каком канале пилот если он есть и записывает в БД сообщение для дальнейшей отправки в SRS
+        /// Записывает в БД сообщение для дальнейшей отправки в SRS
         /// </summary>
         /// <param name="aType">AType10 данные о пилоте</param>
         /// <param name="MessageRu">Сообщение на русском языке</param>
@@ -537,80 +549,56 @@ namespace Il_2.Commander.Commander
         /// <param name="emotion">Эмоциональный окрас сообщения</param>
         private void SaveSpeechMessage(AType10 aType, string MessageRu, string MessageEng, EmotionSRS emotion)
         {
-            ListSRSClients clientsrs = new ListSRSClients();
-            foreach (var item in ClientsSRS.Clients)
+            ExpertDB db = new ExpertDB();
+            int coal = 0;
+            if (aType.COUNTRY == 101)
             {
-                if(item.Name.Equals(aType.NAME))
-                {
-                    clientsrs = item;
-                }
+                coal = 1;
             }
-            if(clientsrs != null)
+            if (aType.COUNTRY == 201)
             {
-                ExpertDB db = new ExpertDB();
-                if (clientsrs.GameState.radios[0].freq == 251000000.0)
-                {
-                    var enATC = GetMinDistanceForATC(aType, "en-US");
-                    db.Speech.Add(new Speech
-                    {
-                        Coalition = clientsrs.Coalition,
-                        CreateDate = DateTime.Now,
-                        Emotion = emotion.ToString(),
-                        Frequency = 251,
-                        Lang = "en-US",
-                        NameSpeaker = enATC.WhosTalking,
-                        RecipientMessage = aType.NAME,
-                        Speed = 1.1,
-                        Voice = enATC.VoiceName,
-                        Message = enATC.WhosTalking + " - " + aType.NAME + MessageEng,
-                    });
-                    db.SaveChanges();
-                }
-                if (clientsrs.GameState.radios[0].freq == 252000000.0)
-                {
-                    var ruATC = GetMinDistanceForATC(aType, "ru-RU");
-                    db.Speech.Add(new Speech
-                    {
-                        Coalition = clientsrs.Coalition,
-                        CreateDate = DateTime.Now,
-                        Emotion = emotion.ToString(),
-                        Frequency = 252,
-                        Lang = "ru-RU",
-                        NameSpeaker = ruATC.WhosTalking,
-                        RecipientMessage = aType.NAME,
-                        Speed = 1.1,
-                        Voice = ruATC.VoiceName,
-                        Message = ruATC.WhosTalking + " - " + aType.NAME + MessageRu,
-                    });
-                    db.SaveChanges();
-                }
-                db.Dispose();
+                coal = 2;
             }
-        }
-        private void UpdateListSRSClients()
-        {
-            try
+            var enATC = GetMinDistanceForATC(aType, "en-US");
+            db.Speech.Add(new Speech
             {
-                var json = string.Empty;
-                using (var fs = File.OpenRead(SetApp.Config.DirSRS + @"\clients-list.json"))
-                using (var sr = new StreamReader(fs, new UTF8Encoding(false)))
-                    json = sr.ReadToEnd();
-                ClientsSRS = JsonConvert.DeserializeObject<ClientsSRS>(json);
-            }
-            catch (Exception ex)
+                Coalition = coal,
+                CreateDate = DateTime.Now,
+                Emotion = emotion.ToString(),
+                Frequency = 251,
+                Lang = "en-US",
+                NameSpeaker = enATC.WhosTalking,
+                RecipientMessage = aType.NAME,
+                Speed = 1.1,
+                Voice = enATC.VoiceName,
+                Message = enATC.WhosTalking + " - " + aType.NAME + MessageEng,
+            });
+            var ruATC = GetMinDistanceForATC(aType, "ru-RU");
+            db.Speech.Add(new Speech
             {
-                GetLogStr(ex.Message, Color.Red);
-            }
+                Coalition = coal,
+                CreateDate = DateTime.Now,
+                Emotion = emotion.ToString(),
+                Frequency = 252,
+                Lang = "ru-RU",
+                NameSpeaker = ruATC.WhosTalking,
+                RecipientMessage = aType.NAME,
+                Speed = 1.1,
+                Voice = ruATC.VoiceName,
+                Message = ruATC.WhosTalking + " - " + aType.NAME + MessageRu,
+            });
+            db.SaveChanges();
+            db.Dispose();
         }
         private ATC GetMinDistanceForATC(AType10 aType, string lang)
         {
             var locfields = ActiveFields.Where(x => x.Lang == lang).ToList();
             var MinDist = double.MaxValue;
             ATC localATC = new ATC();
-            foreach(var item in locfields)
+            foreach (var item in locfields)
             {
                 var dist = SetApp.GetDistance(aType.ZPos, aType.XPos, item.ZPos, item.XPos);
-                if(MinDist > dist)
+                if (MinDist > dist)
                 {
                     MinDist = dist;
                     localATC = item;
@@ -750,6 +738,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void StartMission()
         {
+            UpdateDispatchersATC();
             UpdateActiveFields();
             Planeset = GetPlaneSet();
             messDurTime = DateTime.Now;
@@ -772,6 +761,14 @@ namespace Il_2.Commander.Commander
             Form1.TriggerTime = true;
             SetChangeLog();
         }
+        private void UpdateDispatchersATC()
+        {
+            DispatchersATC.Clear();
+            ExpertDB db = new ExpertDB();
+            var result = db.ATCDispatcher.ToList();
+            DispatchersATC = result;
+            db.Dispose();
+        }
         /// <summary>
         /// Обновление войсов на активных аэродромах
         /// </summary>
@@ -782,7 +779,7 @@ namespace Il_2.Commander.Commander
             ActiveFields.Clear();
             ExpertDB db = new ExpertDB();
             var rear = db.RearFields.ToList();
-            foreach(var item in rear)
+            foreach (var item in rear)
             {
                 var indexRuVoice = random.Next(0, ruDisp.Count);
                 var indexEnVoice = random.Next(0, enDisp.Count);
@@ -995,7 +992,7 @@ namespace Il_2.Commander.Commander
                     if (pilotsList.Exists(x => x.PLID == aType.PID))
                     {
                         var pilot = pilotsList.First(x => x.PLID == aType.PID);
-                        if(!pilot.TakeOffAllowed)
+                        if (!pilot.TakeOffAllowed)
                         {
                             RconCommand wrap = new RconCommand(Rcontype.Kick, pilot);
                             RconCommands.Enqueue(wrap);
@@ -1143,7 +1140,7 @@ namespace Il_2.Commander.Commander
                                 });
                             }
                             db.SaveChanges();
-                            if(messenger != null)
+                            if (messenger != null)
                             {
                                 messenger.SpecSend("FrontLine");
                             }
@@ -2680,7 +2677,7 @@ namespace Il_2.Commander.Commander
         private List<string> GetNameDispatchers(int coal)
         {
             var lname = new List<string>();
-            if(coal == 101)
+            if (coal == 101)
             {
                 lname.Add("oksana");
                 lname.Add("jane");
@@ -2703,7 +2700,7 @@ namespace Il_2.Commander.Commander
                 lname.Add("zahar");
                 lname.Add("ermil");
             }
-            if(coal == 201)
+            if (coal == 201)
             {
                 lname.Add("alyss");
                 lname.Add("nick");
