@@ -14,5 +14,9 @@
         public int Enable { get; set; }
         public bool Rotation { get; set; }
         public double YOri { get; set; }
+        public string NameRu { get; set; }
+        public string NameEn { get; set; }
+        public string VoiceRu { get; set; }
+        public string VoiceEn { get; set; }
     }
 }
