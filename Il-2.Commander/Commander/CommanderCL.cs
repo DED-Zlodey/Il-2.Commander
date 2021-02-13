@@ -127,7 +127,14 @@ namespace Il_2.Commander.Commander
         /// Список активных аэродромов в миссии
         /// </summary>
         private List<ATC> ActiveFields = new List<ATC>();
-        private List<ATCDispatcher> DispatchersATC { get; set; } = new List<ATCDispatcher>();
+        /// <summary>
+        /// Все фразы для голосовых сообщение
+        /// </summary>
+        private List<SpeechPhrase> Phrases = new List<SpeechPhrase>();
+        /// <summary>
+        /// Список отправленных голосовых сообщений об атаке цели.
+        /// </summary>
+        private List<DeferrdedSpeech> DefSpeech = new List<DeferrdedSpeech>();
 
         /// <summary>
         /// Имя текущей миссии.
@@ -296,11 +303,13 @@ namespace Il_2.Commander.Commander
                                             }
                                             int indexemo = random.Next(0, 3);
                                             var emo = (EmotionSRS)indexemo;
-                                            var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
-                                            var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                            var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
+                                            var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
                                             var indexRuPhrase = random.Next(0, ruPhrase.Count);
                                             var indexEnPhrase = random.Next(0, enPhrase.Count);
-                                            SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
+                                            var ruMessage = ruPhrase[indexRuPhrase].Message;
+                                            var enMessage = enPhrase[indexEnPhrase].Message;
+                                            SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                         }
                                     }
                                     else
@@ -323,11 +332,13 @@ namespace Il_2.Commander.Commander
                                             }
                                             int indexemo = random.Next(0, 3);
                                             var emo = (EmotionSRS)indexemo;
-                                            var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
-                                            var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                            var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
+                                            var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
                                             var indexRuPhrase = random.Next(0, ruPhrase.Count);
                                             var indexEnPhrase = random.Next(0, enPhrase.Count);
-                                            SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
+                                            var ruMessage = ruPhrase[indexRuPhrase].Message;
+                                            var enMessage = enPhrase[indexEnPhrase].Message;
+                                            SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                         }
                                     }
                                 }
@@ -351,11 +362,13 @@ namespace Il_2.Commander.Commander
                                         }
                                         int indexemo = random.Next(0, 3);
                                         var emo = (EmotionSRS)indexemo;
-                                        var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
-                                        var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                        var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
+                                        var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
                                         var indexRuPhrase = random.Next(0, ruPhrase.Count);
                                         var indexEnPhrase = random.Next(0, enPhrase.Count);
-                                        SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
+                                        var ruMessage = ruPhrase[indexRuPhrase].Message;
+                                        var enMessage = enPhrase[indexEnPhrase].Message;
+                                        SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                     }
                                 }
                             }
@@ -379,11 +392,13 @@ namespace Il_2.Commander.Commander
                                     }
                                     int indexemo = random.Next(0, 3);
                                     var emo = (EmotionSRS)indexemo;
-                                    var ruPhrase = DispatchersATC.Where(x => x.Lang.Equals("ru-RU")).ToList();
-                                    var enPhrase = DispatchersATC.Where(x => x.Lang.Equals("en-US")).ToList();
+                                    var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
+                                    var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
                                     var indexRuPhrase = random.Next(0, ruPhrase.Count);
                                     var indexEnPhrase = random.Next(0, enPhrase.Count);
-                                    SaveSpeechMessage(result.aType, ruPhrase[indexRuPhrase].Phrase, enPhrase[indexEnPhrase].Phrase, emo);
+                                    var ruMessage = ruPhrase[indexRuPhrase].Message;
+                                    var enMessage = enPhrase[indexEnPhrase].Message;
+                                    SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                 }
                             }
                         }
@@ -494,6 +509,23 @@ namespace Il_2.Commander.Commander
                 db.Dispose();
                 qrcon = true;
             }
+            if(DefSpeech.Count > 0 && qrcon)
+            {
+                qrcon = false;
+                List<DeferrdedSpeech> delete = new List<DeferrdedSpeech>();
+                foreach(var item in DefSpeech)
+                {
+                    if(item.CreateTime.AddSeconds(item.DurationInSec) < DateTime.Now)
+                    {
+                        delete.Add(item);
+                    }
+                }
+                foreach(var item in delete)
+                {
+                    DefSpeech.Remove(item);
+                }
+                qrcon = true;
+            }
             var currentdt = DateTime.Now;
             var curmissend = currentdt - messDurTime;
             var ts = currentdt - dt;
@@ -560,6 +592,7 @@ namespace Il_2.Commander.Commander
                 coal = 2;
             }
             var enATC = GetMinDistanceForATC(aType, "en-US");
+            MessageEng = MessageEng.Replace("{RecipientMessage}", aType.NAME).Replace("{AuthorMessage}", enATC.WhosTalking);
             db.Speech.Add(new Speech
             {
                 Coalition = coal,
@@ -571,9 +604,10 @@ namespace Il_2.Commander.Commander
                 RecipientMessage = aType.NAME,
                 Speed = 1.1,
                 Voice = enATC.VoiceName,
-                Message = enATC.WhosTalking + " - " + aType.NAME + MessageEng,
+                Message = MessageEng,
             });
             var ruATC = GetMinDistanceForATC(aType, "ru-RU");
+            MessageRu = MessageRu.Replace("{RecipientMessage}", aType.NAME).Replace("{AuthorMessage}", ruATC.WhosTalking);
             db.Speech.Add(new Speech
             {
                 Coalition = coal,
@@ -585,7 +619,7 @@ namespace Il_2.Commander.Commander
                 RecipientMessage = aType.NAME,
                 Speed = 1.1,
                 Voice = ruATC.VoiceName,
-                Message = ruATC.WhosTalking + " - " + aType.NAME + MessageRu,
+                Message = MessageRu,
             });
             db.SaveChanges();
             db.Dispose();
@@ -763,10 +797,10 @@ namespace Il_2.Commander.Commander
         }
         private void UpdateDispatchersATC()
         {
-            DispatchersATC.Clear();
+            Phrases.Clear();
             ExpertDB db = new ExpertDB();
-            var result = db.ATCDispatcher.ToList();
-            DispatchersATC = result;
+            var phr = db.SpeechPhrase.ToList();
+            Phrases = phr;
             db.Dispose();
         }
         /// <summary>
@@ -1483,6 +1517,31 @@ namespace Il_2.Commander.Commander
                             db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
                             var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
                             GetLogStr(DestroyedMess, Color.DarkGoldenrod);
+                            if(!DefSpeech.Exists(x => x.IndexAuthor == entON.IndexPoint && x.SubIndexAuthor == entON.SubIndex && x.AuthorMessage == entON.AssociateNameRU))
+                            {
+                                var coal = 1;
+                                if (entON.Coalition == 201)
+                                {
+                                    coal = 2;
+                                }
+                                var actualphraseRU = Phrases.Where(x => x.Lang == "ru-RU" && x.Group == 1).ToList();
+                                var actualphraseEN = Phrases.Where(x => x.Lang == "en-US" && x.Group == 1).ToList();
+                                var square = GetQuadForMap(entON.ZPos, entON.XPos);
+                                if (actualphraseRU.Count > 0)
+                                {
+                                    int rindex = random.Next(0, actualphraseRU.Count);
+                                    var MessageRU = actualphraseRU[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameRU).Replace("{Quad}", square);
+                                    SaveTargetMessage(MessageRU, entON.AssociateNameRU, "All", entON.VoiceRU, coal, 252, "ru-RU");
+                                }
+                                if(actualphraseEN.Count > 0)
+                                {
+                                    int rindex = random.Next(0, actualphraseEN.Count);
+                                    var MessageEN = actualphraseEN[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameEN).Replace("{Quad}", square);
+                                    SaveTargetMessage(MessageEN, entON.AssociateNameEN, "All", entON.VoiceEN, coal, 251, "en-US");
+                                }
+                                DefSpeech.Add(new DeferrdedSpeech(entON.AssociateNameRU, entON.IndexPoint, entON.SubIndex, "All", "11", coal, 180));
+                            }
+                            /// тут пишем голос
                         }
                         var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
                         if (countMandatory < 0)
@@ -1544,6 +1603,25 @@ namespace Il_2.Commander.Commander
                 db.Dispose();
             }
             return output;
+        }
+        private void SaveTargetMessage(string message, string author, string recipient, string voice, int coal, double freq, string lang)
+        {
+            ExpertDB db = new ExpertDB();
+            db.Speech.Add(new Speech
+            {
+                Coalition = coal,
+                CreateDate = DateTime.Now,
+                Emotion = "evil",
+                Frequency = freq,
+                Lang = lang,
+                Message = message,
+                NameSpeaker = author,
+                RecipientMessage = recipient,
+                Speed = 1.1,
+                Voice = voice
+            });
+            db.SaveChanges();
+            db.Dispose();
         }
         /// <summary>
         /// Уничтожение моста. Остановка колонны перед мостом, а так же включение запрета на отправку данной колонны
@@ -1961,6 +2039,25 @@ namespace Il_2.Commander.Commander
                             if (!deferredCommands.Exists(x => x.Command == mess))
                             {
                                 deferredCommands.Add(new DeferredCommand(mess, 2, messcoal));
+                            }
+                            if (!DefSpeech.Exists(x => x.IndexAuthor == entbp.WHID && x.SubIndexAuthor == entbp.Coalition && x.AuthorMessage == entbp.AssociateNameRU))
+                            {
+                                var actualphraseRU = Phrases.Where(x => x.Lang == "ru-RU" && x.Group == 1).ToList();
+                                var actualphraseEN = Phrases.Where(x => x.Lang == "en-US" && x.Group == 1).ToList();
+                                var square = GetQuadForMap(aType.ZPos, aType.XPos);
+                                if (actualphraseRU.Count > 0)
+                                {
+                                    int rindex = random.Next(0, actualphraseRU.Count);
+                                    var MessageRU = actualphraseRU[rindex].Message.Replace("{AuthorMessage}", entbp.AssociateNameRU).Replace("{Quad}", square);
+                                    SaveTargetMessage(MessageRU, entbp.AssociateNameRU, "All", entbp.VoiceRU, messcoal, 252, "ru-RU");
+                                }
+                                if (actualphraseEN.Count > 0)
+                                {
+                                    int rindex = random.Next(0, actualphraseEN.Count);
+                                    var MessageEN = actualphraseEN[rindex].Message.Replace("{AuthorMessage}", entbp.AssociateNameEN).Replace("{Quad}", square);
+                                    SaveTargetMessage(MessageEN, entbp.AssociateNameEN, "All", entbp.VoiceEN, messcoal, 251, "en-US");
+                                }
+                                DefSpeech.Add(new DeferrdedSpeech(entbp.AssociateNameRU, entbp.WHID, entbp.Coalition, "All", "11", messcoal, 180));
                             }
                         }
                         isWH = true;
@@ -2510,6 +2607,10 @@ namespace Il_2.Commander.Commander
             {
                 Planeset.Clear();
             }
+            if(DefSpeech.Count > 0)
+            {
+                DefSpeech.Clear();
+            }
         }
         /// <summary>
         /// Фиксирует завершение миссии в базе данных. Если миссий впереди не осталось, вызывает ReSetCompany
@@ -2792,7 +2893,7 @@ namespace Il_2.Commander.Commander
         {
             var firstquad = string.Format("{0:00}", Math.Ceiling((230400 - XPos) / 10000));
             var secondquad = string.Format("{0:00}", Math.Ceiling(ZPos / 10000));
-            return firstquad + secondquad;
+            return firstquad + "-" + secondquad;
         }
         /// <summary>
         /// Обработка пользовательских направлений атаки. И следом сразу запуск основной генерации миссии.
