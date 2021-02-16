@@ -1201,6 +1201,10 @@ namespace Il_2.Commander.Commander
                                 if (psent != null)
                                 {
                                     var ncraft = psent.Number - 1;
+                                    if(ncraft < 0)
+                                    {
+                                        ncraft = 0;
+                                    }
                                     db.PlaneSet.First(x => x.LogType == plane.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
                                     var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
                                     GetLogStr(mess, Color.Red);
@@ -1327,8 +1331,11 @@ namespace Il_2.Commander.Commander
                     var psent = Planeset.FirstOrDefault(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == ent.COUNTRY);
                     if (psent != null)
                     {
-                        //var pilot = pilotsList.First(x => x.PLID == aType.TID);
                         var ncraft = psent.Number - 1;
+                        if(ncraft < 0)
+                        {
+                            ncraft = 0;
+                        }
                         db.PlaneSet.First(x => x.LogType == ent.TYPE && x.Name == planeName && x.NumField == numfield && x.Coalition == psent.Coalition).Number = ncraft;
                         var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
                         GetLogStr(mess, Color.Red);
