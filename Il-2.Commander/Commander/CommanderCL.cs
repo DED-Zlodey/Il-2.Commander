@@ -1500,7 +1500,7 @@ namespace Il_2.Commander.Commander
         /// <returns></returns>
         private bool KillTargetObj(AType3 aType)
         {
-            var entNameTID = string.Empty; // Проиндесирровать все обязательные объекты. Проверять по индексу!!!
+            var entNameTID = string.Empty;
             var entAt12 = AllLogs.FindLast(x => x.ID == aType.TID);
             if (entAt12 != null)
             {
@@ -1524,7 +1524,7 @@ namespace Il_2.Commander.Commander
                         targets.First(x => x.id == item.id).Destroed = destroy;
                         db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
                         var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
-                        GetLogStr(DestroyedMess, Color.DarkGoldenrod);
+                        GetLogStr(DestroyedMess, Color.DarkOrange);
                         if (!DefSpeech.Exists(x => x.IndexAuthor == entON.IndexPoint && x.SubIndexAuthor == entON.SubIndex && x.AuthorMessage == entON.AssociateNameRU))
                         {
                             var coal = 1;
