@@ -18,6 +18,7 @@ namespace Il_2.Commander.Data
         public string Model { get; set; }
         public string Script { get; set; }
         public int Number { get; set; }
+        public int MaxNumber { get; set; }
         public string AvPayloads { get; set; }
         public string AvMods { get; set; }
         public string AvSkins { get; set; }

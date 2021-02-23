@@ -1209,22 +1209,26 @@ namespace Il_2.Commander.Commander
                                     var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
                                     GetLogStr(mess, Color.Red);
                                     var orders = db.PlanesOrders.ToList();
-                                    if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
+                                    var alltypesinorders = orders.Where(x => x.PlaneSetId == psent.id).Sum(x => x.Number);
+                                    if(alltypesinorders < psent.MaxNumber)
                                     {
-                                        var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
-                                        db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
-                                    }
-                                    else
-                                    {
-                                        db.PlanesOrders.Add(new PlanesOrders
+                                        if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
                                         {
-                                            Coalition = psent.Coalition,
-                                            DateDeath = DateTime.Parse(GameDate),
-                                            FreqSupply = psent.FreqSupply,
-                                            Name = psent.Name,
-                                            Number = 1,
-                                            PlaneSetId = psent.id
-                                        });
+                                            var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
+                                            db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
+                                        }
+                                        else
+                                        {
+                                            db.PlanesOrders.Add(new PlanesOrders
+                                            {
+                                                Coalition = psent.Coalition,
+                                                DateDeath = DateTime.Parse(GameDate),
+                                                FreqSupply = psent.FreqSupply,
+                                                Name = psent.Name,
+                                                Number = 1,
+                                                PlaneSetId = psent.id
+                                            });
+                                        }
                                     }
                                     db.SaveChanges();
                                     if (messenger != null)
@@ -1340,22 +1344,26 @@ namespace Il_2.Commander.Commander
                         var mess = "-=COMMANDER=-: Destroyed " + psent.LogType + " " + psent.Name + " AirField: " + numfield + " " + psent.Coalition + " NumPlanes: " + ncraft.ToString() + " " + pilot.NAME;
                         GetLogStr(mess, Color.Red);
                         var orders = db.PlanesOrders.ToList();
-                        if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
+                        var alltypesinorders = orders.Where(x => x.PlaneSetId == psent.id).Sum(x => x.Number);
+                        if (alltypesinorders < psent.MaxNumber)
                         {
-                            var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
-                            db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
-                        }
-                        else
-                        {
-                            db.PlanesOrders.Add(new PlanesOrders
+                            if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
                             {
-                                Coalition = psent.Coalition,
-                                DateDeath = DateTime.Parse(GameDate),
-                                FreqSupply = psent.FreqSupply,
-                                Name = psent.Name,
-                                Number = 1,
-                                PlaneSetId = psent.id
-                            });
+                                var orderent = db.PlanesOrders.First(x => x.PlaneSetId == psent.id);
+                                db.PlanesOrders.First(x => x.PlaneSetId == psent.id).Number = orderent.Number + 1;
+                            }
+                            else
+                            {
+                                db.PlanesOrders.Add(new PlanesOrders
+                                {
+                                    Coalition = psent.Coalition,
+                                    DateDeath = DateTime.Parse(GameDate),
+                                    FreqSupply = psent.FreqSupply,
+                                    Name = psent.Name,
+                                    Number = 1,
+                                    PlaneSetId = psent.id
+                                });
+                            }
                         }
                         db.SaveChanges();
                         if (messenger != null)
