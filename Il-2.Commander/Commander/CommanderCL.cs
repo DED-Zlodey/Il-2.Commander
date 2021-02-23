@@ -509,18 +509,18 @@ namespace Il_2.Commander.Commander
                 db.Dispose();
                 qrcon = true;
             }
-            if(DefSpeech.Count > 0 && qrcon)
+            if (DefSpeech.Count > 0 && qrcon)
             {
                 qrcon = false;
                 List<DeferrdedSpeech> delete = new List<DeferrdedSpeech>();
-                foreach(var item in DefSpeech)
+                foreach (var item in DefSpeech)
                 {
-                    if(item.CreateTime.AddSeconds(item.DurationInSec) < DateTime.Now)
+                    if (item.CreateTime.AddSeconds(item.DurationInSec) < DateTime.Now)
                     {
                         delete.Add(item);
                     }
                 }
-                foreach(var item in delete)
+                foreach (var item in delete)
                 {
                     DefSpeech.Remove(item);
                 }
@@ -985,7 +985,7 @@ namespace Il_2.Commander.Commander
                     if (aType.TYPE.Contains("Ju 52 3mg4e"))
                     {
                         var planeent = aType.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
-                        if(planeent != null)
+                        if (planeent != null)
                         {
                             var planeName = planeent.NAME;
                             if (!string.IsNullOrEmpty(planeName))
@@ -1201,7 +1201,7 @@ namespace Il_2.Commander.Commander
                                 if (psent != null)
                                 {
                                     var ncraft = psent.Number - 1;
-                                    if(ncraft < 0)
+                                    if (ncraft < 0)
                                     {
                                         ncraft = 0;
                                     }
@@ -1332,7 +1332,7 @@ namespace Il_2.Commander.Commander
                     if (psent != null)
                     {
                         var ncraft = psent.Number - 1;
-                        if(ncraft < 0)
+                        if (ncraft < 0)
                         {
                             ncraft = 0;
                         }
@@ -1500,107 +1500,209 @@ namespace Il_2.Commander.Commander
         /// <returns></returns>
         private bool KillTargetObj(AType3 aType)
         {
+            var entNameTID = string.Empty; // Проиндесирровать все обязательные объекты. Проверять по индексу!!!
+            var entAt12 = AllLogs.FindLast(x => x.ID == aType.TID);
+            if (entAt12 != null)
+            {
+                entNameTID = entAt12.NAME;
+            }
             bool output = false;
             ExpertDB db = new ExpertDB();
             var targets = db.CompTarget.Where(x => x.Enable).ToList();
-            foreach (var item in targets)
+            if(targets.Exists(x => x.EntName.Equals(entNameTID) && x.Mandatory))
             {
-                var Xres = aType.XPos - item.XPos;
-                var Zres = aType.ZPos - item.ZPos;
-                double min = -0.1;
-                double max = 0.1;
-                if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                var item = targets.First(x => x.EntName.Equals(entNameTID));
+                bool enable = false;
+                var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
+                var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
+                if (entON.Enable == 1)
                 {
-                    bool enable = false;
-                    var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
-                    var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
-                    if (entON.Enable == 1)
+                    if (item.InernalWeight > item.Destroed)
                     {
-                        if (item.InernalWeight > item.Destroed)
+                        enable = true;
+                        int destroy = item.Destroed + 1;
+                        targets.First(x => x.id == item.id).Destroed = destroy;
+                        db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
+                        var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
+                        GetLogStr(DestroyedMess, Color.DarkGoldenrod);
+                        if (!DefSpeech.Exists(x => x.IndexAuthor == entON.IndexPoint && x.SubIndexAuthor == entON.SubIndex && x.AuthorMessage == entON.AssociateNameRU))
                         {
+                            var coal = 1;
+                            if (entON.Coalition == 201)
+                            {
+                                coal = 2;
+                            }
+                            var actualphraseRU = Phrases.Where(x => x.Lang == "ru-RU" && x.Group == 1).ToList();
+                            var actualphraseEN = Phrases.Where(x => x.Lang == "en-US" && x.Group == 1).ToList();
+                            var square = GetQuadForMap(entON.ZPos, entON.XPos);
+                            if (actualphraseRU.Count > 0)
+                            {
+                                int rindex = random.Next(0, actualphraseRU.Count);
+                                var MessageRU = actualphraseRU[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameRU).Replace("{Quad}", square);
+                                SaveTargetMessage(MessageRU, entON.AssociateNameRU, "All", entON.VoiceRU, coal, 252, "ru-RU");
+                            }
+                            if (actualphraseEN.Count > 0)
+                            {
+                                int rindex = random.Next(0, actualphraseEN.Count);
+                                var MessageEN = actualphraseEN[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameEN).Replace("{Quad}", square);
+                                SaveTargetMessage(MessageEN, entON.AssociateNameEN, "All", entON.VoiceEN, coal, 251, "en-US");
+                            }
+                            DefSpeech.Add(new DeferrdedSpeech(entON.AssociateNameRU, entON.IndexPoint, entON.SubIndex, "All", "11", coal, 180));
+                        }
+                    }
+                    var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
+                    if (countMandatory < 0)
+                    {
+                        countMandatory = 0;
+                    }
+                    var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
+                    var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
+                    if (countMandatory <= countDestroyedMandatory)
+                    {
+                        if (item.TotalWeigth <= countDestroyed)
+                        {
+                            RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                            RconCommands.Enqueue(command);
+                            var color = Color.Black;
+                            var coalstr = string.Empty;
+                            if (ent.Coalition == 201)
+                            {
+                                color = Color.DarkRed;
+                                coalstr = "Allies destroyed ";
+                            }
+                            if (ent.Coalition == 101)
+                            {
+                                color = Color.DarkBlue;
+                                coalstr = "Axis destroyed ";
+                            }
+                            var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                            GetLogStr(mess, color);
+                            db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                            RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                            RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                            RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                            RconCommands.Enqueue(sendall);
+                            RconCommands.Enqueue(sendred);
+                            RconCommands.Enqueue(sendblue);
                             enable = true;
-                            int destroy = item.Destroed + 1;
-                            targets.First(x => x.id == item.id).Destroed = destroy;
-                            db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
-                            var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
-                            GetLogStr(DestroyedMess, Color.DarkGoldenrod);
-                            if(!DefSpeech.Exists(x => x.IndexAuthor == entON.IndexPoint && x.SubIndexAuthor == entON.SubIndex && x.AuthorMessage == entON.AssociateNameRU))
-                            {
-                                var coal = 1;
-                                if (entON.Coalition == 201)
-                                {
-                                    coal = 2;
-                                }
-                                var actualphraseRU = Phrases.Where(x => x.Lang == "ru-RU" && x.Group == 1).ToList();
-                                var actualphraseEN = Phrases.Where(x => x.Lang == "en-US" && x.Group == 1).ToList();
-                                var square = GetQuadForMap(entON.ZPos, entON.XPos);
-                                if (actualphraseRU.Count > 0)
-                                {
-                                    int rindex = random.Next(0, actualphraseRU.Count);
-                                    var MessageRU = actualphraseRU[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameRU).Replace("{Quad}", square);
-                                    SaveTargetMessage(MessageRU, entON.AssociateNameRU, "All", entON.VoiceRU, coal, 252, "ru-RU");
-                                }
-                                if(actualphraseEN.Count > 0)
-                                {
-                                    int rindex = random.Next(0, actualphraseEN.Count);
-                                    var MessageEN = actualphraseEN[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameEN).Replace("{Quad}", square);
-                                    SaveTargetMessage(MessageEN, entON.AssociateNameEN, "All", entON.VoiceEN, coal, 251, "en-US");
-                                }
-                                DefSpeech.Add(new DeferrdedSpeech(entON.AssociateNameRU, entON.IndexPoint, entON.SubIndex, "All", "11", coal, 180));
-                            }
-                            /// тут пишем голос
                         }
-                        var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
-                        if (countMandatory < 0)
+                    }
+                    db.SaveChanges();
+                    var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1 && x.GroupInput != 14 && x.GroupInput != 15).ToList();
+                    db.Dispose();
+                    if (alltargets.Count == 0)
+                    {
+                        int invcoal = InvertedCoalition(ent.Coalition);
+                        ChangeCoalitionPoint(ent.IndexPoint);
+                        SetAttackPoint(invcoal);
+                        EnableTargetsToCoalition(invcoal);
+                    }
+                    if (enable)
+                    {
+                        output = true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var item in targets)
+                {
+                    var Xres = aType.XPos - item.XPos;
+                    var Zres = aType.ZPos - item.ZPos;
+                    double min = -0.1;
+                    double max = 0.1;
+                    if ((Xres < max && Zres < max) && (Xres > min && Zres > min))
+                    {
+                        bool enable = false;
+                        var ent = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-OFF-") && !x.Name.Contains("Icon-"));
+                        var entON = db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-"));
+                        if (entON.Enable == 1)
                         {
-                            countMandatory = 0;
-                        }
-                        var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
-                        var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
-                        if (countMandatory <= countDestroyedMandatory)
-                        {
-                            if (item.TotalWeigth <= countDestroyed)
+                            if (item.InernalWeight > item.Destroed)
                             {
-                                RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
-                                RconCommands.Enqueue(command);
-                                var color = Color.Black;
-                                var coalstr = string.Empty;
-                                if (ent.Coalition == 201)
-                                {
-                                    color = Color.DarkRed;
-                                    coalstr = "Allies destroyed ";
-                                }
-                                if (ent.Coalition == 101)
-                                {
-                                    color = Color.DarkBlue;
-                                    coalstr = "Axis destroyed ";
-                                }
-                                var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
-                                GetLogStr(mess, color);
-                                db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
-                                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
-                                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
-                                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
-                                RconCommands.Enqueue(sendall);
-                                RconCommands.Enqueue(sendred);
-                                RconCommands.Enqueue(sendblue);
                                 enable = true;
+                                int destroy = item.Destroed + 1;
+                                targets.First(x => x.id == item.id).Destroed = destroy;
+                                db.CompTarget.First(x => x.id == item.id).Destroed = destroy;
+                                var DestroyedMess = "-=COMMANDER=- " + item.Name + " " + item.Model + " " + entON.Coalition + " destroyed";
+                                GetLogStr(DestroyedMess, Color.DarkGoldenrod);
+                                if (!DefSpeech.Exists(x => x.IndexAuthor == entON.IndexPoint && x.SubIndexAuthor == entON.SubIndex && x.AuthorMessage == entON.AssociateNameRU))
+                                {
+                                    var coal = 1;
+                                    if (entON.Coalition == 201)
+                                    {
+                                        coal = 2;
+                                    }
+                                    var actualphraseRU = Phrases.Where(x => x.Lang == "ru-RU" && x.Group == 1).ToList();
+                                    var actualphraseEN = Phrases.Where(x => x.Lang == "en-US" && x.Group == 1).ToList();
+                                    var square = GetQuadForMap(entON.ZPos, entON.XPos);
+                                    if (actualphraseRU.Count > 0)
+                                    {
+                                        int rindex = random.Next(0, actualphraseRU.Count);
+                                        var MessageRU = actualphraseRU[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameRU).Replace("{Quad}", square);
+                                        SaveTargetMessage(MessageRU, entON.AssociateNameRU, "All", entON.VoiceRU, coal, 252, "ru-RU");
+                                    }
+                                    if (actualphraseEN.Count > 0)
+                                    {
+                                        int rindex = random.Next(0, actualphraseEN.Count);
+                                        var MessageEN = actualphraseEN[rindex].Message.Replace("{AuthorMessage}", entON.AssociateNameEN).Replace("{Quad}", square);
+                                        SaveTargetMessage(MessageEN, entON.AssociateNameEN, "All", entON.VoiceEN, coal, 251, "en-US");
+                                    }
+                                    DefSpeech.Add(new DeferrdedSpeech(entON.AssociateNameRU, entON.IndexPoint, entON.SubIndex, "All", "11", coal, 180));
+                                }
                             }
-                        }
-                        db.SaveChanges();
-                        var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1 && x.GroupInput != 14 && x.GroupInput != 15).ToList();
-                        db.Dispose();
-                        if (alltargets.Count == 0)
-                        {
-                            int invcoal = InvertedCoalition(ent.Coalition);
-                            ChangeCoalitionPoint(ent.IndexPoint);
-                            SetAttackPoint(invcoal);
-                            EnableTargetsToCoalition(invcoal);
-                        }
-                        if (enable)
-                        {
-                            output = true;
-                            break;
+                            var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
+                            if (countMandatory < 0)
+                            {
+                                countMandatory = 0;
+                            }
+                            var countDestroyedMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).Sum(x => x.Destroed);
+                            var countDestroyed = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).Sum(x => x.Destroed);
+                            if (countMandatory <= countDestroyedMandatory)
+                            {
+                                if (item.TotalWeigth <= countDestroyed)
+                                {
+                                    RconCommand command = new RconCommand(Rcontype.Input, ent.Name);
+                                    RconCommands.Enqueue(command);
+                                    var color = Color.Black;
+                                    var coalstr = string.Empty;
+                                    if (ent.Coalition == 201)
+                                    {
+                                        color = Color.DarkRed;
+                                        coalstr = "Allies destroyed ";
+                                    }
+                                    if (ent.Coalition == 101)
+                                    {
+                                        color = Color.DarkBlue;
+                                        coalstr = "Axis destroyed ";
+                                    }
+                                    var mess = "-=COMMANDER=-: " + coalstr + GetNameTarget(ent.GroupInput) + " Regiment: " + ent.IndexPoint + " Batalion: " + ent.SubIndex;
+                                    GetLogStr(mess, color);
+                                    db.ServerInputs.First(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Name.Contains("-ON-") && !x.Name.Contains("Icon-")).Enable = -1;
+                                    RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                                    RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                                    RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                                    RconCommands.Enqueue(sendall);
+                                    RconCommands.Enqueue(sendred);
+                                    RconCommands.Enqueue(sendblue);
+                                    enable = true;
+                                }
+                            }
+                            db.SaveChanges();
+                            var alltargets = db.ServerInputs.Where(x => x.IndexPoint == ent.IndexPoint && x.Enable == 1 && x.GroupInput != 14 && x.GroupInput != 15).ToList();
+                            db.Dispose();
+                            if (alltargets.Count == 0)
+                            {
+                                int invcoal = InvertedCoalition(ent.Coalition);
+                                ChangeCoalitionPoint(ent.IndexPoint);
+                                SetAttackPoint(invcoal);
+                                EnableTargetsToCoalition(invcoal);
+                            }
+                            if (enable)
+                            {
+                                output = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -1611,6 +1713,16 @@ namespace Il_2.Commander.Commander
             }
             return output;
         }
+        /// <summary>
+        /// Сохраняет в БД сообщение для последующей его конвертации в голосовое
+        /// </summary>
+        /// <param name="message">Текст сообщения</param>
+        /// <param name="author">Автор сообщения</param>
+        /// <param name="recipient">Получатель сообщения</param>
+        /// <param name="voice">Имя голоса</param>
+        /// <param name="coal">Коалиция</param>
+        /// <param name="freq">Частота на которой следует передавать голосовое сообщение</param>
+        /// <param name="lang">Язык сообщения</param>
         private void SaveTargetMessage(string message, string author, string recipient, string voice, int coal, double freq, string lang)
         {
             ExpertDB db = new ExpertDB();
@@ -2614,7 +2726,7 @@ namespace Il_2.Commander.Commander
             {
                 Planeset.Clear();
             }
-            if(DefSpeech.Count > 0)
+            if (DefSpeech.Count > 0)
             {
                 DefSpeech.Clear();
             }

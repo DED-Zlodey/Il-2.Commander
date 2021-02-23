@@ -8,6 +8,10 @@
         /// </summary>
         public string Name { get; set; }
         /// <summary>
+        /// Строковый индекс конкретного объекта
+        /// </summary>
+        public string EntName { get; set; }
+        /// <summary>
         /// Внутриигровой скрипт модели объекта
         /// </summary>
         public string Model { get; set; }
