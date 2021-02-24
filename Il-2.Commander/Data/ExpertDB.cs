@@ -56,5 +56,9 @@ namespace Il_2.Commander.Data
         public virtual DbSet<ATCDispatcher> ATCDispatcher { get; set; }
         public virtual DbSet<ServiceArea> ServiceArea { get; set; }
         public virtual DbSet<SpeechPhrase> SpeechPhrase { get; set; }
+        /// <summary>
+        /// Таблица пилотов выразивших желание попадать в бан после смерти аватара
+        /// </summary>
+        public virtual DbSet<BanToKill> BanToKill { get; set; }
     }
 }

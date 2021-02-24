@@ -1373,6 +1373,24 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
+            var btkent = db.BanToKill.FirstOrDefault(x => x.GameId == pilot.LOGIN);
+            var banlist = db.BanList.ToList();
+            if(btkent != null)
+            {
+                if(!banlist.Exists(x => x.PlayerId == btkent.GameId))
+                {
+                    banlist.Add(new BanList
+                    {
+                        CreateDate = DateTime.Now,
+                        HoursBan = btkent.BanHours,
+                        PilotName = pilot.NAME,
+                        PlayerId = pilot.LOGIN,
+                        ProfileId = pilot.IDS,
+                        ReasonBan = "Personal desire of the patient"
+                    });
+                    db.SaveChanges();
+                }
+            }
             db.Dispose();
         }
         /// <summary>
