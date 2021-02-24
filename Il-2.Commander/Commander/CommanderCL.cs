@@ -1210,7 +1210,7 @@ namespace Il_2.Commander.Commander
                                     GetLogStr(mess, Color.Red);
                                     var orders = db.PlanesOrders.ToList();
                                     var alltypesinorders = orders.Where(x => x.PlaneSetId == psent.id).Sum(x => x.Number);
-                                    if(alltypesinorders < psent.MaxNumber)
+                                    if (alltypesinorders < psent.MaxNumber)
                                     {
                                         if (orders.Exists(x => x.PlaneSetId == psent.id && x.DateDeath == DateTime.Parse(GameDate)))
                                         {
@@ -1375,9 +1375,9 @@ namespace Il_2.Commander.Commander
             }
             var btkent = db.BanToKill.FirstOrDefault(x => x.GameId == pilot.LOGIN);
             var banlist = db.BanList.ToList();
-            if(btkent != null)
+            if (btkent != null)
             {
-                if(!banlist.Exists(x => x.PlayerId == btkent.GameId))
+                if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
                 {
                     banlist.Add(new BanList
                     {
@@ -1535,7 +1535,7 @@ namespace Il_2.Commander.Commander
             bool output = false;
             ExpertDB db = new ExpertDB();
             var targets = db.CompTarget.Where(x => x.Enable).ToList();
-            if(targets.Exists(x => x.EntName.Equals(entNameTID) && x.Mandatory))
+            if (targets.Exists(x => x.EntName.Equals(entNameTID) && x.Mandatory))
             {
                 var item = targets.First(x => x.EntName.Equals(entNameTID));
                 bool enable = false;
@@ -2090,39 +2090,61 @@ namespace Il_2.Commander.Commander
             if (coal == 201 && currentBluePoint != null)
             {
                 var inputs = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentBluePoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
-                foreach (var item in inputs)
+                if (inputs.Count > 0)
                 {
-                    RconCommand command = new RconCommand(Rcontype.Input, item.Name);
-                    RconCommands.Enqueue(command);
-                    int id = item.id;
-                    db.ServerInputs.First(x => x.id == id).Enable = 1;
-                    var targets = db.CompTarget.Where(x => x.GroupInput == item.GroupInput && x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).ToList();
-                    for (int i = 0; i < targets.Count; i++)
+                    foreach (var item in inputs)
                     {
-                        int tarid = targets[i].id;
-                        db.CompTarget.First(x => x.id == tarid).Enable = true;
-                        targets[i].Enable = true;
+                        RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                        RconCommands.Enqueue(command);
+                        int id = item.id;
+                        db.ServerInputs.First(x => x.id == id).Enable = 1;
+                        var targets = db.CompTarget.Where(x => x.GroupInput == item.GroupInput && x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).ToList();
+                        for (int i = 0; i < targets.Count; i++)
+                        {
+                            int tarid = targets[i].id;
+                            db.CompTarget.First(x => x.id == tarid).Enable = true;
+                            targets[i].Enable = true;
+                        }
+                        ActiveTargets.AddRange(targets);
                     }
-                    ActiveTargets.AddRange(targets);
+                }
+                else
+                {
+                    var city = db.GraphCity.First(x => x.IndexCity == currentBluePoint.IndexPoint);
+                    int invcoal = InvertedCoalition(city.Coalitions);
+                    ChangeCoalitionPoint(city.IndexCity);
+                    SetAttackPoint(invcoal);
+                    EnableTargetsToCoalition(invcoal);
                 }
             }
             if (coal == 101 && currentRedPoint != null)
             {
                 var inputs = db.ServerInputs.Where(x => x.Coalition != coal && x.IndexPoint == currentRedPoint.IndexPoint && !x.Name.Contains("Icon-") && !x.Name.Contains("-OFF-")).ToList();
-                foreach (var item in inputs)
+                if (inputs.Count > 0)
                 {
-                    RconCommand command = new RconCommand(Rcontype.Input, item.Name);
-                    RconCommands.Enqueue(command);
-                    int id = item.id;
-                    db.ServerInputs.First(x => x.id == id).Enable = 1;
-                    var targets = db.CompTarget.Where(x => x.GroupInput == item.GroupInput && x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).ToList();
-                    for (int i = 0; i < targets.Count; i++)
+                    foreach (var item in inputs)
                     {
-                        int tarid = targets[i].id;
-                        db.CompTarget.First(x => x.id == tarid).Enable = true;
-                        targets[i].Enable = true;
+                        RconCommand command = new RconCommand(Rcontype.Input, item.Name);
+                        RconCommands.Enqueue(command);
+                        int id = item.id;
+                        db.ServerInputs.First(x => x.id == id).Enable = 1;
+                        var targets = db.CompTarget.Where(x => x.GroupInput == item.GroupInput && x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex).ToList();
+                        for (int i = 0; i < targets.Count; i++)
+                        {
+                            int tarid = targets[i].id;
+                            db.CompTarget.First(x => x.id == tarid).Enable = true;
+                            targets[i].Enable = true;
+                        }
+                        ActiveTargets.AddRange(targets);
                     }
-                    ActiveTargets.AddRange(targets);
+                }
+                else
+                {
+                    var city = db.GraphCity.First(x => x.IndexCity == currentRedPoint.IndexPoint);
+                    int invcoal = InvertedCoalition(city.Coalitions);
+                    ChangeCoalitionPoint(city.IndexCity);
+                    SetAttackPoint(invcoal);
+                    EnableTargetsToCoalition(invcoal);
                 }
             }
             db.SaveChanges();
