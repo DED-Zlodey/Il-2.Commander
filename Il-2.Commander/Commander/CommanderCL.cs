@@ -1,7 +1,5 @@
 ﻿using Il_2.Commander.Data;
 using Il_2.Commander.Parser;
-using Il_2.Commander.SRS;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1187,6 +1185,7 @@ namespace Il_2.Commander.Commander
                     var Planeset = db.PlaneSet.Where(x => x.Coalition == pilot.COUNTRY).ToList();
                     int numfield = 0;
                     var plane = pilot.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.AirCraft);
+                    var pilotent = pilot.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.BotBotPilot);
                     if (plane != null)
                     {
                         if (Planeset.Exists(x => x.LogType == plane.TYPE))
@@ -1236,6 +1235,37 @@ namespace Il_2.Commander.Commander
                                         messenger.SpecSend("FrontLine");
                                     }
                                 }
+                            }
+                        }
+                    }
+                    if (pilotent != null)
+                    {
+                        double dmg = 0;
+                        var dmglist = pilot.DamageList.Where(x => x.TID == pilotent.ID).ToList();
+                        foreach (var item in dmglist)
+                        {
+                            dmg += (item.DMG * 100);
+                        }
+                        var mess = "-=COMMANDER=-: Wounded " + pilot.NAME + " DMG: " + dmg + " %";
+                        GetLogStr(mess, Color.Red);
+                        var btkent = db.BanToKill.FirstOrDefault(x => x.GameId == pilot.LOGIN);
+                        var banlist = db.BanList.ToList();
+                        if (btkent != null && dmg >= 100)
+                        {
+                            if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
+                            {
+                                banlist.Add(new BanList
+                                {
+                                    CreateDate = DateTime.Now,
+                                    HoursBan = btkent.BanHours,
+                                    PilotName = pilot.NAME,
+                                    PlayerId = pilot.LOGIN,
+                                    ProfileId = pilot.IDS,
+                                    ReasonBan = "Personal desire of the patient"
+                                });
+                                db.SaveChanges();
+                                var mess1 = "-=COMMANDER=-: Banned " + pilot.NAME + " DMG: " + dmg;
+                                GetLogStr(mess1, Color.Red);
                             }
                         }
                     }
@@ -1373,22 +1403,34 @@ namespace Il_2.Commander.Commander
                     }
                 }
             }
-            var btkent = db.BanToKill.FirstOrDefault(x => x.GameId == pilot.LOGIN);
-            var banlist = db.BanList.ToList();
-            if (btkent != null)
+            var pent = pilot.ParenEnt.FirstOrDefault(x => x.TypeVeh == TypeAtype12.BotBotPilot);
+            if (pent != null)
             {
-                if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
+                double dmg = 0;
+                var dmglist = pilot.DamageList.Where(x => x.TID == pent.ID).ToList();
+                foreach (var item in dmglist)
                 {
-                    banlist.Add(new BanList
+                    dmg += (item.DMG * 100);
+                }
+                var btkent = db.BanToKill.FirstOrDefault(x => x.GameId == pilot.LOGIN);
+                var banlist = db.BanList.ToList();
+                if (btkent != null && dmg >= 100)
+                {
+                    if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
                     {
-                        CreateDate = DateTime.Now,
-                        HoursBan = btkent.BanHours,
-                        PilotName = pilot.NAME,
-                        PlayerId = pilot.LOGIN,
-                        ProfileId = pilot.IDS,
-                        ReasonBan = "Personal desire of the patient"
-                    });
-                    db.SaveChanges();
+                        banlist.Add(new BanList
+                        {
+                            CreateDate = DateTime.Now,
+                            HoursBan = btkent.BanHours,
+                            PilotName = pilot.NAME,
+                            PlayerId = pilot.LOGIN,
+                            ProfileId = pilot.IDS,
+                            ReasonBan = "Personal desire of the patient"
+                        });
+                        db.SaveChanges();
+                        var mess = "-=COMMANDER=-: Banned " + pilot.NAME + " DMG: " + dmg;
+                        GetLogStr(mess, Color.Red);
+                    }
                 }
             }
             db.Dispose();
