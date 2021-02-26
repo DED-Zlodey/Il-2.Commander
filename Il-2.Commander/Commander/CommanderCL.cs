@@ -278,7 +278,7 @@ namespace Il_2.Commander.Commander
                         ExpertDB db = new ExpertDB();
                         if (result.aType != null)
                         {
-                            if(result.aType.Banned && result.aType.ParenEnt.Exists(x => x.TypeVeh == TypeAtype12.AirCraft || x.TypeVeh == TypeAtype12.BotBotPilot))
+                            if(result.aType.Banned)
                             {
                                 rcon.Kick(result.aType.LOGIN);
                             }
