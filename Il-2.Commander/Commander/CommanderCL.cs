@@ -1247,6 +1247,28 @@ namespace Il_2.Commander.Commander
                                             });
                                         }
                                     }
+                                    double dmg = 0;
+                                    var dmglist = pilot.DamageList.Where(x => x.TID == plane.ID).ToList();
+                                    foreach (var item in dmglist)
+                                    {
+                                        dmg += (item.DMG * 100);
+                                    }
+                                    var banlist = db.BanList.ToList();
+                                    if (!banlist.Exists(x => x.PlayerId == pilot.LOGIN))
+                                    {
+                                        db.BanList.Add(new BanList
+                                        {
+                                            CreateDate = DateTime.Now,
+                                            HoursBan = 1,
+                                            PilotName = pilot.NAME,
+                                            PlayerId = pilot.LOGIN,
+                                            ProfileId = pilot.IDS,
+                                            ReasonBan = "Loss Plane"
+                                        });
+                                        db.SaveChanges();
+                                        var mess1 = "-=COMMANDER=-: Banned for " + 1 + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                                        GetLogStr(mess1, Color.Red);
+                                    }
                                     db.SaveChanges();
                                     if (messenger != null)
                                     {
@@ -1282,7 +1304,15 @@ namespace Il_2.Commander.Commander
                                     ReasonBan = "Personal desire of the patient"
                                 });
                                 db.SaveChanges();
-                                var mess1 = "-=COMMANDER=-: Banned for " + btkent.BanHours + " hours " + pilot.NAME + " DMG: " + dmg + " %";
+                                var mess1 = "-=COMMANDER=-: Banned for " + btkent.BanHours + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                                GetLogStr(mess1, Color.Red);
+                            }
+                            else
+                            {
+                                var curban = db.BanList.First(x => x.PlayerId == btkent.GameId);
+                                db.BanList.First(x => x.PlayerId == btkent.GameId).HoursBan = curban.HoursBan + 1;
+                                db.SaveChanges();
+                                var mess1 = "-=COMMANDER=-: Banned for " + (curban.HoursBan + 1) + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                                 GetLogStr(mess1, Color.Red);
                             }
                         }
@@ -1292,7 +1322,8 @@ namespace Il_2.Commander.Commander
             }
             if (pilot.Death != null)
             {
-                HandleKillPilot(pilot);
+                if (!CheckBotDisposeFieldArea(aType, pilot.COUNTRY) && !CheckBotDisposeForServiceArea(aType, pilot.COUNTRY))
+                    HandleKillPilot(pilot);
             }
         }
         /// <summary>
@@ -1413,6 +1444,28 @@ namespace Il_2.Commander.Commander
                                 });
                             }
                         }
+                        double dmg = 0;
+                        var dmglist = pilot.DamageList.Where(x => x.TID == ent.ID).ToList();
+                        foreach (var item in dmglist)
+                        {
+                            dmg += (item.DMG * 100);
+                        }
+                        var banlist = db.BanList.ToList();
+                        if (!banlist.Exists(x => x.PlayerId == pilot.LOGIN))
+                        {
+                            db.BanList.Add(new BanList
+                            {
+                                CreateDate = DateTime.Now,
+                                HoursBan = 1,
+                                PilotName = pilot.NAME,
+                                PlayerId = pilot.LOGIN,
+                                ProfileId = pilot.IDS,
+                                ReasonBan = "Loss Plane"
+                            });
+                            db.SaveChanges();
+                            var mess1 = "-=COMMANDER=-: Banned for " + 1 + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                            GetLogStr(mess1, Color.Red);
+                        }
                         db.SaveChanges();
                         if (messenger != null)
                         {
@@ -1446,8 +1499,16 @@ namespace Il_2.Commander.Commander
                             ReasonBan = "Personal desire of the patient"
                         });
                         db.SaveChanges();
-                        var mess = "-=COMMANDER=-: Banned for " + btkent.BanHours + " hours " + pilot.NAME + " DMG: " + dmg + " %";
+                        var mess = "-=COMMANDER=-: Banned for " + btkent.BanHours + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                         GetLogStr(mess, Color.Red);
+                    }
+                    else
+                    {
+                        var curban = db.BanList.First(x => x.PlayerId == btkent.GameId);
+                        db.BanList.First(x => x.PlayerId == btkent.GameId).HoursBan = curban.HoursBan + 1;
+                        db.SaveChanges();
+                        var mess1 = "-=COMMANDER=-: Banned for " + (curban.HoursBan + 1) + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                        GetLogStr(mess1, Color.Red);
                     }
                 }
             }
