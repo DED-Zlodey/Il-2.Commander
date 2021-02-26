@@ -1,5 +1,7 @@
 ﻿using Il_2.Commander.Commander;
+using Il_2.Commander.Data;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Il_2.Commander.Parser
@@ -47,6 +49,7 @@ namespace Il_2.Commander.Parser
         /// Пилот сбит.
         /// </summary>
         public AType3 Death { get; set; }
+        public bool Banned { get; private set; }
 
         #region Регулярки
         private static Regex reg_tick = new Regex(@"(?<=T:).*?(?= AType:)");
@@ -109,6 +112,25 @@ namespace Il_2.Commander.Parser
             SKIN = reg_skin.Match(str).Value;
             WM = int.Parse(reg_wm.Match(str).Value);
             GameStatus = GameStatusPilot.Parking.ToString();
+            Banned = CheckBanned();
+        }
+        /// <summary>
+        /// Определяет забанен ли данный пилот
+        /// </summary>
+        /// <returns>Возвращает true, если пилот в бане и false если не в бане</returns>
+        private bool CheckBanned()
+        {
+            ExpertDB db = new ExpertDB();
+            var bl = db.BanList.ToList();
+            db.Dispose();
+            if (bl.Exists(x => x.PlayerId == LOGIN))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
     enum GameStatusPilot

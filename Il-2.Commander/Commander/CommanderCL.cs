@@ -276,38 +276,74 @@ namespace Il_2.Commander.Commander
                         ExpertDB db = new ExpertDB();
                         if (result.aType != null)
                         {
-                            var profile = db.ProfileUser.FirstOrDefault(x => x.GameId == result.aType.LOGIN);
-                            if (profile != null)
+                            if(result.aType.Banned)
                             {
-                                if (profile.Coalition > 0)
+                                rcon.Kick(result.aType.LOGIN);
+                            }
+                            else
+                            {
+                                var profile = db.ProfileUser.FirstOrDefault(x => x.GameId == result.aType.LOGIN);
+                                if (profile != null)
                                 {
-                                    if (profile.Coalition == result.aType.COUNTRY)
+                                    if (profile.Coalition > 0)
                                     {
-                                        var players = rcon.GetPlayerList();
-                                        var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
-                                        if (player != null)
+                                        if (profile.Coalition == result.aType.COUNTRY)
                                         {
-                                            var mess = "-=COMMANDER=- " + player.Name + " Take-off is allowed.";
-                                            //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
-                                            //RconCommands.Enqueue(wrap);
-                                            GetLogStr(mess, Color.Indigo);
-                                            if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                                            var players = rcon.GetPlayerList();
+                                            var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                            if (player != null)
                                             {
-                                                var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
-                                                if (locpilot != null)
+                                                var mess = "-=COMMANDER=- " + player.Name + " Take-off is allowed.";
+                                                //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                                //RconCommands.Enqueue(wrap);
+                                                GetLogStr(mess, Color.Indigo);
+                                                if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
                                                 {
-                                                    pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
+                                                    var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
+                                                    if (locpilot != null)
+                                                    {
+                                                        pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
+                                                    }
                                                 }
+                                                int indexemo = random.Next(0, 3);
+                                                var emo = (EmotionSRS)indexemo;
+                                                var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
+                                                var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
+                                                var indexRuPhrase = random.Next(0, ruPhrase.Count);
+                                                var indexEnPhrase = random.Next(0, enPhrase.Count);
+                                                var ruMessage = ruPhrase[indexRuPhrase].Message;
+                                                var enMessage = enPhrase[indexEnPhrase].Message;
+                                                SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                             }
-                                            int indexemo = random.Next(0, 3);
-                                            var emo = (EmotionSRS)indexemo;
-                                            var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
-                                            var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
-                                            var indexRuPhrase = random.Next(0, ruPhrase.Count);
-                                            var indexEnPhrase = random.Next(0, enPhrase.Count);
-                                            var ruMessage = ruPhrase[indexRuPhrase].Message;
-                                            var enMessage = enPhrase[indexEnPhrase].Message;
-                                            SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
+                                        }
+                                        else
+                                        {
+                                            var players = rcon.GetPlayerList();
+                                            var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                            if (player != null)
+                                            {
+                                                var mess = "-=COMMANDER=- " + player.Name + " You chose the wrong coalition. Take-off is PROHIBITED!!!";
+                                                //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                                //RconCommands.Enqueue(wrap);
+                                                GetLogStr(mess, Color.Indigo);
+                                                if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
+                                                {
+                                                    var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
+                                                    if (locpilot != null)
+                                                    {
+                                                        pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
+                                                    }
+                                                }
+                                                int indexemo = random.Next(0, 3);
+                                                var emo = (EmotionSRS)indexemo;
+                                                var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
+                                                var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
+                                                var indexRuPhrase = random.Next(0, ruPhrase.Count);
+                                                var indexEnPhrase = random.Next(0, enPhrase.Count);
+                                                var ruMessage = ruPhrase[indexRuPhrase].Message;
+                                                var enMessage = enPhrase[indexEnPhrase].Message;
+                                                SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
+                                            }
                                         }
                                     }
                                     else
@@ -316,7 +352,7 @@ namespace Il_2.Commander.Commander
                                         var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
                                         if (player != null)
                                         {
-                                            var mess = "-=COMMANDER=- " + player.Name + " You chose the wrong coalition. Take-off is PROHIBITED!!!";
+                                            var mess = "-=COMMANDER=- " + player.Name + " You didn't choose a coalition. Take-off is PROHIBITED!!!";
                                             //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                             //RconCommands.Enqueue(wrap);
                                             GetLogStr(mess, Color.Indigo);
@@ -346,7 +382,7 @@ namespace Il_2.Commander.Commander
                                     var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
                                     if (player != null)
                                     {
-                                        var mess = "-=COMMANDER=- " + player.Name + " You didn't choose a coalition. Take-off is PROHIBITED!!!";
+                                        var mess = "-=COMMANDER=- " + player.Name + " You are not registered on the site. Take-off is PROHIBITED!!!";
                                         //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                         //RconCommands.Enqueue(wrap);
                                         GetLogStr(mess, Color.Indigo);
@@ -368,35 +404,6 @@ namespace Il_2.Commander.Commander
                                         var enMessage = enPhrase[indexEnPhrase].Message;
                                         SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                     }
-                                }
-                            }
-                            else
-                            {
-                                var players = rcon.GetPlayerList();
-                                var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
-                                if (player != null)
-                                {
-                                    var mess = "-=COMMANDER=- " + player.Name + " You are not registered on the site. Take-off is PROHIBITED!!!";
-                                    //RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
-                                    //RconCommands.Enqueue(wrap);
-                                    GetLogStr(mess, Color.Indigo);
-                                    if (pilotsList.Exists(x => x.LOGIN == player.PlayerId))
-                                    {
-                                        var locpilot = pilotsList.FirstOrDefault(x => x.LOGIN == player.PlayerId);
-                                        if (locpilot != null)
-                                        {
-                                            pilotsList.First(x => x.LOGIN == player.PlayerId).TakeOffAllowed = true;
-                                        }
-                                    }
-                                    int indexemo = random.Next(0, 3);
-                                    var emo = (EmotionSRS)indexemo;
-                                    var ruPhrase = Phrases.Where(x => x.Lang.Equals("ru-RU") && x.Group == 0).ToList();
-                                    var enPhrase = Phrases.Where(x => x.Lang.Equals("en-US") && x.Group == 0).ToList();
-                                    var indexRuPhrase = random.Next(0, ruPhrase.Count);
-                                    var indexEnPhrase = random.Next(0, enPhrase.Count);
-                                    var ruMessage = ruPhrase[indexRuPhrase].Message;
-                                    var enMessage = enPhrase[indexEnPhrase].Message;
-                                    SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                 }
                             }
                         }
@@ -1254,7 +1261,7 @@ namespace Il_2.Commander.Commander
                         {
                             if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
                             {
-                                banlist.Add(new BanList
+                                db.BanList.Add(new BanList
                                 {
                                     CreateDate = DateTime.Now,
                                     HoursBan = btkent.BanHours,
@@ -1264,7 +1271,7 @@ namespace Il_2.Commander.Commander
                                     ReasonBan = "Personal desire of the patient"
                                 });
                                 db.SaveChanges();
-                                var mess1 = "-=COMMANDER=-: Banned " + pilot.NAME + " DMG: " + dmg;
+                                var mess1 = "-=COMMANDER=-: Banned for " + btkent.BanHours + " hours " + pilot.NAME + " DMG: " + dmg + " %";
                                 GetLogStr(mess1, Color.Red);
                             }
                         }
@@ -1418,7 +1425,7 @@ namespace Il_2.Commander.Commander
                 {
                     if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
                     {
-                        banlist.Add(new BanList
+                        db.BanList.Add(new BanList
                         {
                             CreateDate = DateTime.Now,
                             HoursBan = btkent.BanHours,
@@ -1428,7 +1435,7 @@ namespace Il_2.Commander.Commander
                             ReasonBan = "Personal desire of the patient"
                         });
                         db.SaveChanges();
-                        var mess = "-=COMMANDER=-: Banned " + pilot.NAME + " DMG: " + dmg;
+                        var mess = "-=COMMANDER=-: Banned for " + btkent.BanHours + " hours " + pilot.NAME + " DMG: " + dmg + " %";
                         GetLogStr(mess, Color.Red);
                     }
                 }
