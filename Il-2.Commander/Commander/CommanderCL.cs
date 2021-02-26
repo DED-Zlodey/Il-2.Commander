@@ -170,6 +170,7 @@ namespace Il_2.Commander.Commander
         /// Игровая дата
         /// </summary>
         private string GameDate = string.Empty;
+        private bool SendingEndMissionFiveMinutes = false;
 
         #region Регулярки
         private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
@@ -199,6 +200,10 @@ namespace Il_2.Commander.Commander
         /// </summary>
         public void SendRconCommand()
         {
+            var currentdt = DateTime.Now;
+            var curmissend = currentdt - messDurTime;
+            var ts = currentdt - dt;
+            var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
             if (RconCommands.Count > 0 && qrcon)
             {
                 if (rcon != null && RconCommands.Count > 0)
@@ -220,9 +225,6 @@ namespace Il_2.Commander.Commander
                         var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
                         if (player != null)
                         {
-                            var playerdt = DateTime.Now;
-                            var playerts = playerdt - dt;
-                            var ostatok = Math.Round(DurationMission - playerts.TotalMinutes, 0);
                             if (ostatok <= 0)
                             {
                                 ostatok = 0;
@@ -531,13 +533,21 @@ namespace Il_2.Commander.Commander
                 }
                 qrcon = true;
             }
-            var currentdt = DateTime.Now;
-            var curmissend = currentdt - messDurTime;
-            var ts = currentdt - dt;
+            if (ostatok <= 5 && !SendingEndMissionFiveMinutes)
+            {
+                SendingEndMissionFiveMinutes = true;
+                var mess = "-=COMMANDER=- END of the mission: " + ostatok + " min.";
+                RconCommand sendall = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 0);
+                RconCommand sendred = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 1);
+                RconCommand sendblue = new RconCommand(Rcontype.ChatMsg, RoomType.Coalition, mess, 2);
+                RconCommands.Enqueue(sendall);
+                RconCommands.Enqueue(sendred);
+                RconCommands.Enqueue(sendblue);
+                GetLogStr(mess, Color.Black);
+            }
             if (curmissend.TotalMinutes >= durmess)
             {
                 messDurTime = DateTime.Now;
-                var ostatok = Math.Round(DurationMission - ts.TotalMinutes, 0);
                 if (ostatok < 0)
                 {
                     ostatok = 0;
@@ -799,6 +809,7 @@ namespace Il_2.Commander.Commander
             Form1.busy = true;
             Form1.TriggerTime = true;
             SetChangeLog();
+            SendingEndMissionFiveMinutes = false;
         }
         private void UpdateDispatchersATC()
         {

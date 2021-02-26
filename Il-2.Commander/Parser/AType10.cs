@@ -49,6 +49,9 @@ namespace Il_2.Commander.Parser
         /// Пилот сбит.
         /// </summary>
         public AType3 Death { get; set; }
+        /// <summary>
+        /// Пилот в бане
+        /// </summary>
         public bool Banned { get; private set; }
 
         #region Регулярки
