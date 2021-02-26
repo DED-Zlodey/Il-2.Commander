@@ -1636,7 +1636,7 @@ namespace Il_2.Commander.Commander
                             DefSpeech.Add(new DeferrdedSpeech(entON.AssociateNameRU, entON.IndexPoint, entON.SubIndex, "All", "11", coal, 180));
                         }
                     }
-                    var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
+                    var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count;
                     if (countMandatory < 0)
                     {
                         countMandatory = 0;
@@ -1737,7 +1737,7 @@ namespace Il_2.Commander.Commander
                                     DefSpeech.Add(new DeferrdedSpeech(entON.AssociateNameRU, entON.IndexPoint, entON.SubIndex, "All", "11", coal, 180));
                                 }
                             }
-                            var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count - 1;
+                            var countMandatory = targets.Where(x => x.IndexPoint == item.IndexPoint && x.SubIndex == item.SubIndex && x.Mandatory).ToList().Count;
                             if (countMandatory < 0)
                             {
                                 countMandatory = 0;
