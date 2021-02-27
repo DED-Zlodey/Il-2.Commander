@@ -1,5 +1,6 @@
 ﻿using Il_2.Commander.Commander;
 using Il_2.Commander.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -125,13 +126,26 @@ namespace Il_2.Commander.Parser
         {
             ExpertDB db = new ExpertDB();
             var bl = db.BanList.ToList();
-            db.Dispose();
             if (bl.Exists(x => x.PlayerId == LOGIN))
             {
-                return true;
+                var ent = bl.First(x => x.PlayerId == LOGIN);
+                var endban = ent.CreateDate.AddHours(ent.HoursBan).AddMinutes(ent.MinuteBan);
+                if(endban >= DateTime.Now)
+                {
+                    db.BanList.Remove(ent);
+                    db.SaveChanges();
+                    db.Dispose();
+                    return false;
+                }
+                else
+                {
+                    db.Dispose();
+                    return true;
+                }
             }
             else
             {
+                db.Dispose();
                 return false;
             }
         }

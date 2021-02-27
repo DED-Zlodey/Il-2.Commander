@@ -1256,17 +1256,19 @@ namespace Il_2.Commander.Commander
                                     var banlist = db.BanList.ToList();
                                     if (!banlist.Exists(x => x.PlayerId == pilot.LOGIN))
                                     {
+                                        var BFLtime = db.DurationBFL.ToList();
                                         db.BanList.Add(new BanList
                                         {
                                             CreateDate = DateTime.Now,
-                                            HoursBan = 1,
+                                            HoursBan = BFLtime[0].HoursBan,
+                                            MinuteBan = BFLtime[0].MinutesBan,
                                             PilotName = pilot.NAME,
                                             PlayerId = pilot.LOGIN,
                                             ProfileId = pilot.IDS,
                                             ReasonBan = "Loss Plane"
                                         });
                                         db.SaveChanges();
-                                        var mess1 = "-=COMMANDER=-: Banned for " + 1 + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                                        var mess1 = "-=COMMANDER=-: Banned for " + BFLtime[0].MinutesBan + " minutes " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                                         GetLogStr(mess1, Color.Red);
                                     }
                                     db.SaveChanges();
@@ -1294,10 +1296,12 @@ namespace Il_2.Commander.Commander
                         {
                             if (!banlist.Exists(x => x.PlayerId == btkent.GameId))
                             {
+                                var BFLtime = db.DurationBFL.ToList();
                                 db.BanList.Add(new BanList
                                 {
                                     CreateDate = DateTime.Now,
                                     HoursBan = btkent.BanHours,
+                                    MinuteBan = BFLtime[0].MinutesBan,
                                     PilotName = pilot.NAME,
                                     PlayerId = pilot.LOGIN,
                                     ProfileId = pilot.IDS,
@@ -1309,8 +1313,9 @@ namespace Il_2.Commander.Commander
                             }
                             else
                             {
+                                var BFLtime = db.DurationBFL.ToList();
                                 var curban = db.BanList.First(x => x.PlayerId == btkent.GameId);
-                                db.BanList.First(x => x.PlayerId == btkent.GameId).HoursBan = curban.HoursBan + 1;
+                                db.BanList.First(x => x.PlayerId == btkent.GameId).MinuteBan = curban.MinuteBan + BFLtime[0].MinutesBan;
                                 db.SaveChanges();
                                 var mess1 = "-=COMMANDER=-: Banned for " + (curban.HoursBan + 1) + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                                 GetLogStr(mess1, Color.Red);
@@ -1451,19 +1456,21 @@ namespace Il_2.Commander.Commander
                             dmg += (item.DMG * 100);
                         }
                         var banlist = db.BanList.ToList();
+                        var BFLtime = db.DurationBFL.ToList();
                         if (!banlist.Exists(x => x.PlayerId == pilot.LOGIN))
                         {
                             db.BanList.Add(new BanList
                             {
                                 CreateDate = DateTime.Now,
-                                HoursBan = 1,
+                                HoursBan = BFLtime[0].HoursBan,
+                                MinuteBan = BFLtime[0].MinutesBan,
                                 PilotName = pilot.NAME,
                                 PlayerId = pilot.LOGIN,
                                 ProfileId = pilot.IDS,
                                 ReasonBan = "Loss Plane"
                             });
                             db.SaveChanges();
-                            var mess1 = "-=COMMANDER=-: Banned for " + 1 + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                            var mess1 = "-=COMMANDER=-: Banned for " + BFLtime[0].MinutesBan + " minutes " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                             GetLogStr(mess1, Color.Red);
                         }
                         db.SaveChanges();
@@ -1493,6 +1500,7 @@ namespace Il_2.Commander.Commander
                         {
                             CreateDate = DateTime.Now,
                             HoursBan = btkent.BanHours,
+                            MinuteBan = 0,
                             PilotName = pilot.NAME,
                             PlayerId = pilot.LOGIN,
                             ProfileId = pilot.IDS,
@@ -1504,10 +1512,11 @@ namespace Il_2.Commander.Commander
                     }
                     else
                     {
+                        var BFLtime = db.DurationBFL.ToList();
                         var curban = db.BanList.First(x => x.PlayerId == btkent.GameId);
-                        db.BanList.First(x => x.PlayerId == btkent.GameId).HoursBan = curban.HoursBan + 1;
+                        db.BanList.First(x => x.PlayerId == btkent.GameId).MinuteBan = curban.MinuteBan + BFLtime[0].MinutesBan;
                         db.SaveChanges();
-                        var mess1 = "-=COMMANDER=-: Banned for " + (curban.HoursBan + 1) + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                        var mess1 = "-=COMMANDER=-: Banned for " + curban.HoursBan + 1 + " hours " + curban.MinuteBan + BFLtime[0].MinutesBan + " minutes " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                         GetLogStr(mess1, Color.Red);
                     }
                 }

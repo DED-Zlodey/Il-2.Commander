@@ -12,6 +12,7 @@ namespace Il_2.Commander.Data
         public string PilotName { get; set; }
         public DateTime CreateDate { get; set; }
         public int HoursBan { get; set; }
+        public int MinuteBan { get; set; }
         public string ReasonBan { get; set; }
     }
 }

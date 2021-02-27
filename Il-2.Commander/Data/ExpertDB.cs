@@ -60,5 +60,6 @@ namespace Il_2.Commander.Data
         /// Таблица пилотов выразивших желание попадать в бан после смерти аватара
         /// </summary>
         public virtual DbSet<BanToKill> BanToKill { get; set; }
+        public virtual DbSet<DurationBFL> DurationBFL { get; set; }
     }
 }
