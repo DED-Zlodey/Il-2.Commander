@@ -281,6 +281,7 @@ namespace Il_2.Commander.Commander
                             if(result.aType.Banned)
                             {
                                 rcon.Kick(result.aType.LOGIN);
+                                GetLogStr("Kick: " + result.aType.NAME, Color.Red);
                             }
                             else
                             {
@@ -315,7 +316,7 @@ namespace Il_2.Commander.Commander
                                                 var indexEnPhrase = random.Next(0, enPhrase.Count);
                                                 var ruMessage = ruPhrase[indexRuPhrase].Message;
                                                 var enMessage = enPhrase[indexEnPhrase].Message;
-                                                SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
+                                                //SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                             }
                                         }
                                         else
@@ -344,7 +345,7 @@ namespace Il_2.Commander.Commander
                                                 var indexEnPhrase = random.Next(0, enPhrase.Count);
                                                 var ruMessage = ruPhrase[indexRuPhrase].Message;
                                                 var enMessage = enPhrase[indexEnPhrase].Message;
-                                                SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
+                                                //SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                             }
                                         }
                                     }
@@ -374,7 +375,7 @@ namespace Il_2.Commander.Commander
                                             var indexEnPhrase = random.Next(0, enPhrase.Count);
                                             var ruMessage = ruPhrase[indexRuPhrase].Message;
                                             var enMessage = enPhrase[indexEnPhrase].Message;
-                                            SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
+                                            //SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                         }
                                     }
                                 }
@@ -404,7 +405,7 @@ namespace Il_2.Commander.Commander
                                         var indexEnPhrase = random.Next(0, enPhrase.Count);
                                         var ruMessage = ruPhrase[indexRuPhrase].Message;
                                         var enMessage = enPhrase[indexEnPhrase].Message;
-                                        SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
+                                        //SaveSpeechMessage(result.aType, ruMessage, enMessage, emo);
                                     }
                                 }
                             }
