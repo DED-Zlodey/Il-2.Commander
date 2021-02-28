@@ -259,7 +259,7 @@ namespace Il_2.Commander.Commander
                         var ent = db.BanList.FirstOrDefault(x => x.PlayerId == result.Bans.USERID);
                         if (ent != null)
                         {
-                            var DateEndBan = ent.CreateDate.AddHours(ent.HoursBan);
+                            var DateEndBan = ent.CreateDate.AddHours(ent.HoursBan).AddMinutes(ent.MinuteBan);
                             if (DateEndBan <= DateTime.Now)
                             {
                                 db.BanList.Remove(ent);
