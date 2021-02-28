@@ -129,8 +129,10 @@ namespace Il_2.Commander.Parser
             if (bl.Exists(x => x.PlayerId == LOGIN))
             {
                 var ent = bl.First(x => x.PlayerId == LOGIN);
-                var endban = ent.CreateDate.AddHours(ent.HoursBan).AddMinutes(ent.MinuteBan);
-                if(endban >= DateTime.Now)
+                int hours = ent.HoursBan;
+                int minutes = ent.MinuteBan;
+                var endban = ent.CreateDate.AddHours(hours).AddMinutes(minutes);
+                if(endban <= DateTime.Now)
                 {
                     db.BanList.Remove(ent);
                     db.SaveChanges();

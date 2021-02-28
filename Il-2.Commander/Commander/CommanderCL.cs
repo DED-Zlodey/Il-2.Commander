@@ -1267,7 +1267,6 @@ namespace Il_2.Commander.Commander
                                             ProfileId = pilot.IDS,
                                             ReasonBan = "Loss Plane"
                                         });
-                                        db.SaveChanges();
                                         var mess1 = "-=COMMANDER=-: Banned for " + BFLtime[0].MinutesBan + " minutes " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
                                         GetLogStr(mess1, Color.Red);
                                     }
@@ -1314,11 +1313,14 @@ namespace Il_2.Commander.Commander
                             else
                             {
                                 var BFLtime = db.DurationBFL.ToList();
-                                var curban = db.BanList.First(x => x.PlayerId == btkent.GameId);
-                                db.BanList.First(x => x.PlayerId == btkent.GameId).MinuteBan = curban.MinuteBan + BFLtime[0].MinutesBan;
-                                db.SaveChanges();
-                                var mess1 = "-=COMMANDER=-: Banned for " + (curban.HoursBan + 1) + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
-                                GetLogStr(mess1, Color.Red);
+                                var curban = db.BanList.FirstOrDefault(x => x.PlayerId == btkent.GameId);
+                                if(curban != null)
+                                {
+                                    db.BanList.First(x => x.PlayerId == btkent.GameId).MinuteBan = curban.MinuteBan + BFLtime[0].MinutesBan;
+                                    db.SaveChanges();
+                                    var mess1 = "-=COMMANDER=-: Banned for " + (curban.HoursBan + 1) + " hours " + pilot.NAME + " DMG: " + Math.Round(dmg, 2) + " %";
+                                    GetLogStr(mess1, Color.Red);
+                                }
                             }
                         }
                     }
@@ -1328,7 +1330,9 @@ namespace Il_2.Commander.Commander
             if (pilot.Death != null)
             {
                 if (!CheckBotDisposeFieldArea(aType, pilot.COUNTRY) && !CheckBotDisposeForServiceArea(aType, pilot.COUNTRY))
+                {
                     HandleKillPilot(pilot);
+                }
             }
         }
         /// <summary>
