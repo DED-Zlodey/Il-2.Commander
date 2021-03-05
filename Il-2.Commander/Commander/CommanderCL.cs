@@ -171,6 +171,7 @@ namespace Il_2.Commander.Commander
         /// </summary>
         private string GameDate = string.Empty;
         private bool SendingEndMissionFiveMinutes = false;
+        private List<DefferedKick> kicks = new List<DefferedKick>();
 
         #region Регулярки
         private static Regex reg_brackets = new Regex(@"(?<={).*?(?=})");
@@ -278,10 +279,16 @@ namespace Il_2.Commander.Commander
                         ExpertDB db = new ExpertDB();
                         if (result.aType != null)
                         {
-                            if(result.aType.Banned)
+                            if (result.aType.Banned)
                             {
-                                rcon.Kick(result.aType.LOGIN);
-                                GetLogStr("Kick: " + result.aType.NAME, Color.Red);
+                                var players = rcon.GetPlayerList();
+                                var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
+                                if (player != null)
+                                {
+                                    var mess = "-=COMMANDER=- " + player.Name + " you are not allowed to take off!!!";
+                                    RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
+                                    RconCommands.Enqueue(wrap);
+                                }
                             }
                             else
                             {
@@ -432,6 +439,26 @@ namespace Il_2.Commander.Commander
                     }
                     qrcon = true;
                 }
+            }
+            if (kicks.Count > 0 && qrcon && rcon != null)
+            {
+                qrcon = false;
+                List<DefferedKick> delete = new List<DefferedKick>();
+                foreach (var item in kicks)
+                {
+                    var end = item.CreateDate.AddMinutes(item.TimeOut.TotalMinutes);
+                    if (end <= DateTime.Now)
+                    {
+                        rcon.Kick(item.GameId);
+                        GetLogStr("Kick: " + item.PilotName, Color.Red);
+                        delete.Add(item);
+                    }
+                }
+                foreach (var item in delete)
+                {
+                    kicks.Remove(item);
+                }
+                qrcon = true;
             }
             if (deferredCommands.Count > 0 && qrcon)
             {
@@ -1027,6 +1054,13 @@ namespace Il_2.Commander.Commander
                     RconCommands.Enqueue(wrap);
                     RconCommand wrap1 = new RconCommand(Rcontype.CheckRegistration, aType);
                     RconCommands.Enqueue(wrap1);
+                    if (aType.Banned)
+                    {
+                        if (!kicks.Exists(x => x.GameId == aType.LOGIN))
+                        {
+                            kicks.Add(new DefferedKick(aType, new TimeSpan(0, 1, 30)));
+                        }
+                    }
                 }
                 if (str[i].Contains("AType:16 "))
                 {
@@ -1315,7 +1349,7 @@ namespace Il_2.Commander.Commander
                             {
                                 var BFLtime = db.DurationBFL.ToList();
                                 var curban = db.BanList.FirstOrDefault(x => x.PlayerId == btkent.GameId);
-                                if(curban != null)
+                                if (curban != null)
                                 {
                                     db.BanList.First(x => x.PlayerId == btkent.GameId).MinuteBan = curban.MinuteBan + BFLtime[0].MinutesBan;
                                     db.SaveChanges();
