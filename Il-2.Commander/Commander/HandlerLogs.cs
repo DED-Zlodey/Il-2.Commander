@@ -162,6 +162,7 @@ namespace Il_2.Commander.Commander
                     }
                 }
                 locstr.Add(coord);
+                counter++;
             }
             str.AddRange(locstr);
             return str;

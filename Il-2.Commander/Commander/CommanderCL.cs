@@ -285,7 +285,7 @@ namespace Il_2.Commander.Commander
                                 var player = players.FirstOrDefault(x => x.PlayerId == result.aType.LOGIN);
                                 if (player != null)
                                 {
-                                    var mess = "-=COMMANDER=- " + player.Name + " you are not allowed to take off!!!";
+                                    var mess = "-=COMMANDER=- " + player.Name + " take off forbidden 10 minutes!!!";
                                     RconCommand wrap = new RconCommand(Rcontype.ChatMsg, RoomType.ClientId, mess, player.Cid);
                                     RconCommands.Enqueue(wrap);
                                 }
