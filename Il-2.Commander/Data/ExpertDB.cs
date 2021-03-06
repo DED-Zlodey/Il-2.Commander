@@ -61,5 +61,9 @@ namespace Il_2.Commander.Data
         /// </summary>
         public virtual DbSet<BanToKill> BanToKill { get; set; }
         public virtual DbSet<DurationBFL> DurationBFL { get; set; }
+        public virtual DbSet<AreaCoord> AreaCoord { get; set; }
+        public virtual DbSet<Area> Area { get; set; }
+        public virtual DbSet<InfArea> InfArea { get; set; }
+        public virtual DbSet<InfAreaCoord> InfAreaCoord { get; set; }
     }
 }

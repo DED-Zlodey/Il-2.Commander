@@ -133,11 +133,38 @@ namespace Il_2.Commander.Commander
                     item.YPos.ToString().Replace(",", ".") + ", " + item.ZPos.ToString().Replace(",", ".") + ") IDS()");
                 counter++;
             }
+            fakefields = GetInfluenceArea(db, tick, fakefields, counter);
             str.InsertRange(i, fakefields);
             db.Dispose();
             FileInfo fi = new FileInfo(path);
             var npath = SetApp.Config.DirStatLogs + fi.Name;
             File.WriteAllLines(npath, str);
+        }
+        private List<string> GetInfluenceArea(ExpertDB db, string tick, List<string> str, int counter)
+        {
+            List<string> locstr = new List<string>();
+            var ia = db.InfArea.ToList();
+            for (int i = 0; i < ia.Count; i++)
+            {
+                str.Add("T:" + tick + " AType:13 AID:" + counter + " COUNTRY:" + ia[i].Coalition + " ENABLED:1 BC(0,0,0,0,0)");
+                var iac = db.InfAreaCoord.Where(x => x.IndexArea == ia[i].IndexArea).ToList();
+                iac.Sort();
+                string coord = "T:" + tick + " AType:14 AID:" + counter + " BP(";
+                for (int k = 0; k < iac.Count; k++)
+                {
+                    if(k != iac.Count - 1)
+                    {
+                        coord += "(" + iac[k].XPos.ToString().Replace(",", ".") + "," + iac[k].ZPos.ToString().Replace(",", ".") + "),";
+                    }
+                    if (k == iac.Count - 1)
+                    {
+                        coord += "(" + iac[k].XPos.ToString().Replace(",", ".") + "," + iac[k].ZPos.ToString().Replace(",", ".") + "))";
+                    }
+                }
+                locstr.Add(coord);
+            }
+            str.AddRange(locstr);
+            return str;
         }
         /// <summary>
         /// Чтение лог-файла, постановка его в очередь на обработку
