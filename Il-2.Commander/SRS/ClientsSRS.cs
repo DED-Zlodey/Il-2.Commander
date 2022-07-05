@@ -2,6 +2,9 @@
 {
     public struct ClientsSRS
     {
+        /// <summary>
+        /// Список клиентов СРС
+        /// </summary>
         public ListSRSClients[] Clients { get; set; }
     }
 }
